@@ -6,7 +6,7 @@ import { getOrgContext } from "@/lib/session";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "דשבורד", ready: true },
-  { href: "/equipment", label: "ציוד", ready: false },
+  { href: "/equipment", label: "ציוד", ready: true },
   { href: "/inventory", label: "מלאי", ready: false },
   { href: "/maintenance", label: "תקלות ותחזוקה", ready: false },
   { href: "/tasks", label: "משימות", ready: false },
