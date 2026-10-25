@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { EQUIPMENT_STATUS_LABELS } from "@/lib/labels";
@@ -27,10 +28,12 @@ function Metric({ label, value, tone = "neutral" }: { label: string; value: numb
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, href, children }: { title: string; href: string; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h2 className="mb-3 text-lg font-semibold">{title}</h2>
+      <h2 className="mb-3 text-lg font-semibold">
+        <Link href={href} className="hover:text-blue-800 hover:underline">{title}</Link>
+      </h2>
       <dl className="grid grid-cols-2 gap-3">{children}</dl>
     </section>
   );
@@ -98,24 +101,24 @@ async function DashboardContent() {
       )}
       <Alerts stats={stats} />
       <div className="grid gap-4 md:grid-cols-2">
-        <Section title="ציוד">
+        <Section title="ציוד" href="/equipment">
           <Metric label="סה״כ מכונות" value={stats.equipment.total} />
           <Metric label="תקינות" value={stats.equipment.operational} tone="good" />
           <Metric label="מושבתות או בטיפול" value={stats.equipment.down} tone="bad" />
           <Metric label="דורשות טיפול" value={stats.equipment.needsAttention} tone="warn" />
         </Section>
-        <Section title="מלאי">
+        <Section title="מלאי" href="/inventory">
           <Metric label="פריטי מלאי" value={stats.inventory.total} />
           <Metric label="מתחת לסף מינימום" value={stats.inventory.lowStockCount} tone="warn" />
           <Metric label="הזמנות פתוחות" value={stats.inventory.openOrders} />
         </Section>
-        <Section title="תקלות ותחזוקה">
+        <Section title="תקלות ותחזוקה" href="/maintenance">
           <Metric label="תקלות פתוחות" value={stats.maintenance.openFaults} tone="warn" />
           <Metric label="תקלות קריטיות" value={stats.maintenance.criticalFaults} tone="bad" />
           <Metric label="טיפולים מתוכננים" value={stats.maintenance.scheduled} />
           <Metric label="טיפולים באיחור" value={stats.maintenance.overdue} tone="bad" />
         </Section>
-        <Section title="משימות">
+        <Section title="משימות" href="/tasks">
           <Metric label="פתוחות" value={stats.tasks.open} />
           <Metric label="באיחור" value={stats.tasks.overdue} tone="bad" />
           <Metric label="הושלמו" value={stats.tasks.completed} tone="good" />

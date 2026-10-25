@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { href: "/equipment", label: "ציוד", ready: true },
   { href: "/inventory", label: "מלאי", ready: true },
   { href: "/maintenance", label: "תקלות ותחזוקה", ready: true },
-  { href: "/tasks", label: "משימות", ready: false },
+  { href: "/tasks", label: "משימות", ready: true },
 ] as const;
 
 async function CurrentUser() {
