@@ -131,7 +131,10 @@ async function EquipmentDetail({ params }: { params: PageProps<"/equipment/[id]"
             </Card>
           )}
 
-          <Card title="תחזוקה מתוכננת">
+          <Card
+            title="תחזוקה מתוכננת"
+            actions={can(ctx.role, "maintenance.record") && <Link href={`/maintenance/plans/new?equipmentId=${e.id}`} className="text-sm text-blue-700 underline">הוספה</Link>}
+          >
             {e.plans.length === 0 ? (
               <EmptyState>אין תוכנית תחזוקה.</EmptyState>
             ) : (

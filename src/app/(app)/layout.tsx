@@ -9,7 +9,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "דשבורד", ready: true },
   { href: "/equipment", label: "ציוד", ready: true },
   { href: "/inventory", label: "מלאי", ready: true },
-  { href: "/maintenance", label: "תקלות ותחזוקה", ready: false },
+  { href: "/maintenance", label: "תקלות ותחזוקה", ready: true },
   { href: "/tasks", label: "משימות", ready: false },
 ] as const;
 
