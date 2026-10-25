@@ -1,0 +1,580 @@
+// LabOps data model.
+// Multi-tenant: every operational row belongs to an Organization.
+// Auth tables (User, Session, Account, Verification) follow the Better Auth schema.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────── Auth (Better Auth) ─────────────────────────
+
+model User {
+  id              String   @id
+  name            String
+  email           String   @unique
+  emailVerified   Boolean  @default(false)
+  image           String?
+  isPlatformAdmin Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  sessions           Session[]
+  accounts           Account[]
+  memberships        Membership[]
+  faultReports       FaultReport[]          @relation("FaultReporter")
+  faultUpdates       FaultUpdate[]
+  procedureRevisions ProcedureRevision[]
+  maintenance        MaintenanceRecord[]    @relation("MaintenancePerformer")
+  transactions       InventoryTransaction[]
+  assignedTasks      Task[]                 @relation("TaskAssignee")
+  createdTasks       Task[]                 @relation("TaskCreator")
+  documents          EquipmentDocument[]
+  auditLogs          AuditLog[]
+  bridgeTokens       BridgeToken[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ───────────────────────── Tenancy ─────────────────────────
+
+enum MemberRole {
+  ADMIN
+  INSTRUCTOR
+  VIEWER
+}
+
+enum LabType {
+  MOBILE
+  FIXED
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  labs               Lab[]
+  memberships        Membership[]
+  equipment          Equipment[]
+  documents          EquipmentDocument[]
+  faultReports       FaultReport[]
+  faultUpdates       FaultUpdate[]
+  procedures         Procedure[]
+  procedureRevisions ProcedureRevision[]
+  maintenance        MaintenanceRecord[]
+  plans              MaintenancePlan[]
+  inventoryItems     InventoryItem[]
+  transactions       InventoryTransaction[]
+  tasks              Task[]
+  auditLogs          AuditLog[]
+  printerLinks       PrinterLink[]
+  bridgeTokens       BridgeToken[]
+}
+
+model Lab {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  type           LabType
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  equipment      Equipment[]
+  inventoryItems InventoryItem[]
+
+  @@unique([organizationId, name])
+}
+
+model Membership {
+  id             String     @id @default(cuid())
+  userId         String
+  organizationId String
+  role           MemberRole
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+}
+
+// ───────────────────────── Equipment ─────────────────────────
+
+enum EquipmentStatus {
+  OPERATIONAL
+  LIMITED_OPERATION
+  UNDER_MAINTENANCE
+  OUT_OF_SERVICE
+}
+
+model Equipment {
+  id                 String          @id @default(cuid())
+  organizationId     String
+  labId              String?
+  name               String
+  category           String
+  manufacturer       String?
+  model              String?
+  serialNumber       String?
+  location           String?
+  status             EquipmentStatus @default(OPERATIONAL)
+  purchaseDate       DateTime?       @db.Date
+  warrantyExpiresAt  DateTime?       @db.Date
+  notes              String?
+  safetyInstructions String?
+  archivedAt         DateTime?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lab          Lab?                @relation(fields: [labId], references: [id], onDelete: SetNull)
+  documents    EquipmentDocument[]
+  faultReports FaultReport[]
+  maintenance  MaintenanceRecord[]
+  plans        MaintenancePlan[]
+  tasks        Task[]
+  printerLink  PrinterLink?
+  procedures   Procedure[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, name])
+}
+
+enum DocumentKind {
+  IMAGE
+  MANUAL
+  SAFETY
+  OTHER
+}
+
+model EquipmentDocument {
+  id             String       @id @default(cuid())
+  organizationId String
+  equipmentId    String
+  kind           DocumentKind
+  fileName       String
+  storageKey     String       @unique
+  mimeType       String
+  sizeBytes      Int
+  uploadedById   String
+  createdAt      DateTime     @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  equipment    Equipment    @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  uploadedBy   User         @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@index([equipmentId])
+}
+
+// ───────────────────────── Maintenance ─────────────────────────
+
+enum FaultSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum FaultStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_FOR_PARTS
+  RESOLVED
+  CLOSED
+}
+
+model FaultReport {
+  id             String        @id @default(cuid())
+  organizationId String
+  equipmentId    String
+  description    String
+  severity       FaultSeverity
+  status         FaultStatus   @default(OPEN)
+  reportedById   String
+  reportedAt     DateTime      @default(now())
+  resolvedAt     DateTime?
+  // Who is handling it: free text, since it is often an outside technician or supplier.
+  handledBy      String?
+  expectedFixAt  DateTime?     @db.Date
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  equipment    Equipment           @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  reportedBy   User                @relation("FaultReporter", fields: [reportedById], references: [id], onDelete: Restrict)
+  maintenance  MaintenanceRecord[]
+  updates      FaultUpdate[]
+
+  @@index([organizationId, status, severity])
+  @@index([equipmentId])
+}
+
+// Append-only log of what happened with a fault (status changes and notes).
+model FaultUpdate {
+  id             String       @id @default(cuid())
+  organizationId String
+  faultReportId  String
+  authorId       String
+  fromStatus     FaultStatus?
+  toStatus       FaultStatus?
+  note           String?
+  createdAt      DateTime     @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  faultReport  FaultReport  @relation(fields: [faultReportId], references: [id], onDelete: Restrict)
+  author       User         @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([faultReportId, createdAt])
+}
+
+enum MaintenanceType {
+  PREVENTIVE
+  CORRECTIVE
+  INSPECTION
+}
+
+model MaintenanceRecord {
+  id             String          @id @default(cuid())
+  organizationId String
+  equipmentId    String
+  faultReportId  String?
+  type           MaintenanceType
+  description    String
+  performedAt    DateTime
+  performedById  String
+  partsReplaced  String?
+  notes          String?
+  createdAt      DateTime        @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  equipment    Equipment    @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  faultReport  FaultReport? @relation(fields: [faultReportId], references: [id], onDelete: SetNull)
+  performedBy  User         @relation("MaintenancePerformer", fields: [performedById], references: [id], onDelete: Restrict)
+
+  @@index([equipmentId, performedAt])
+}
+
+// Where an interval came from. Intervals must never be invented.
+enum PlanSource {
+  MANUFACTURER
+  ADMIN
+}
+
+model MaintenancePlan {
+  id             String     @id @default(cuid())
+  organizationId String
+  equipmentId    String
+  title          String
+  intervalDays   Int?
+  nextDueAt      DateTime   @db.Date
+  source         PlanSource
+  sourceNote     String?
+  isActive       Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  equipment    Equipment    @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, isActive, nextDueAt])
+}
+
+// ───────────────────────── Inventory ─────────────────────────
+
+model InventoryItem {
+  id              String    @id @default(cuid())
+  organizationId  String
+  labId           String?
+  name            String
+  category        String
+  quantity        Decimal   @default(0) @db.Decimal(12, 3)
+  unit            String
+  minStockLevel   Decimal?  @db.Decimal(12, 3)
+  storageLocation String?
+  supplier        String?
+  unitCost        Decimal?  @db.Decimal(10, 2)
+  notes           String?
+  archivedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lab          Lab?                   @relation(fields: [labId], references: [id], onDelete: SetNull)
+  transactions InventoryTransaction[]
+
+  @@index([organizationId, name])
+}
+
+enum InventoryTransactionType {
+  RECEIVE
+  ISSUE
+  ADJUST
+}
+
+// Append-only ledger: UPDATE and DELETE are blocked by a database trigger.
+model InventoryTransaction {
+  id             String                   @id @default(cuid())
+  organizationId String
+  itemId         String
+  type           InventoryTransactionType
+  quantityDelta  Decimal                  @db.Decimal(12, 3)
+  balanceAfter   Decimal                  @db.Decimal(12, 3)
+  reason         String?
+  userId         String
+  createdAt      DateTime                 @default(now())
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  item         InventoryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([itemId, createdAt])
+}
+
+// ───────────────────────── Tasks ─────────────────────────
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  COMPLETED
+}
+
+model Task {
+  id             String       @id @default(cuid())
+  organizationId String
+  title          String
+  description    String?
+  assigneeId     String?
+  priority       TaskPriority @default(MEDIUM)
+  status         TaskStatus   @default(TODO)
+  dueDate        DateTime?    @db.Date
+  equipmentId    String?
+  notes          String?
+  createdById    String
+  completedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  assignee     User?        @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdBy    User         @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  equipment    Equipment?   @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status, dueDate])
+  @@index([assigneeId, status])
+}
+
+// ───────────────────────── Audit ─────────────────────────
+
+// Append-only: UPDATE and DELETE are blocked by a database trigger.
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String?
+  actorId        String?
+  action         String
+  entityType     String
+  entityId       String?
+  details        Json?
+  createdAt      DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  actor        User?         @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, createdAt])
+}
+
+// ───────────────────────── Printer integration (read-only) ─────────────────────────
+
+enum PrinterVendor {
+  BAMBU_LAB
+}
+
+// Links a piece of equipment to a networked printer by its serial number.
+// Network address and access code never reach the app: they stay on the bridge device.
+model PrinterLink {
+  id             String        @id @default(cuid())
+  organizationId String
+  equipmentId    String        @unique
+  vendor         PrinterVendor
+  serialNumber   String
+  createdAt      DateTime      @default(now())
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  equipment    Equipment      @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  status       PrinterStatus?
+  jobs         PrinterJob[]
+
+  @@unique([organizationId, serialNumber])
+}
+
+// Latest known state of a printer, as last reported by a bridge.
+model PrinterStatus {
+  printerLinkId    String    @id
+  online           Boolean
+  state            String?
+  jobName          String?
+  progressPercent  Int?
+  remainingMinutes Int?
+  layer            Int?
+  totalLayers      Int?
+  nozzleTemps      Json?
+  bedTemp          Float?
+  chamberTemp      Float?
+  hmsAlerts        Json?
+  filaments        Json?
+  jobStartedAt     DateTime?
+  reportedAt       DateTime
+  receivedAt       DateTime  @default(now()) @updatedAt
+
+  printerLink PrinterLink @relation(fields: [printerLinkId], references: [id], onDelete: Cascade)
+}
+
+// Credential a bridge device uses to push status. Only a SHA-256 hash is stored.
+model BridgeToken {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  tokenHash      String    @unique
+  createdById    String
+  lastSeenAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
+}
+
+enum PrinterJobResult {
+  FINISHED
+  FAILED
+}
+
+// A completed print, derived from state transitions reported by the bridge.
+// Used for daily summaries and print-hour totals.
+model PrinterJob {
+  id            String           @id @default(cuid())
+  printerLinkId String
+  jobName       String?
+  startedAt     DateTime
+  endedAt       DateTime
+  result        PrinterJobResult
+
+  printerLink PrinterLink @relation(fields: [printerLinkId], references: [id], onDelete: Cascade)
+
+  @@index([printerLinkId, endedAt])
+}
+
+enum ProcedureKind {
+  SAFETY
+  OPERATION
+  MAINTENANCE
+  GENERAL
+}
+
+// A procedure is either for one machine or, with no equipment, for the whole lab.
+model Procedure {
+  id             String        @id @default(cuid())
+  organizationId String
+  equipmentId    String?
+  kind           ProcedureKind
+  title          String
+  body           String
+  // Where the content comes from (manufacturer manual, approved by ...). Required on save.
+  source         String
+  version        Int           @default(1)
+  archivedAt     DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  equipment    Equipment?          @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  revisions    ProcedureRevision[]
+
+  @@index([organizationId, equipmentId])
+}
+
+// Append-only: every saved version of a procedure.
+model ProcedureRevision {
+  id             String   @id @default(cuid())
+  organizationId String
+  procedureId    String
+  version        Int
+  title          String
+  body           String
+  source         String
+  editedById     String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  procedure    Procedure    @relation(fields: [procedureId], references: [id], onDelete: Restrict)
+  editedBy     User         @relation(fields: [editedById], references: [id], onDelete: Restrict)
+
+  @@unique([procedureId, version])
+}
