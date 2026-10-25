@@ -7,8 +7,8 @@ import { formToObject, validationError, type ActionState } from "@/lib/forms";
 import type { Permission } from "@/lib/permissions";
 import { requirePermission } from "@/lib/session";
 import { DomainError } from "@/modules/types";
-import { FaultReportInput, FaultStatusInput, MaintenancePlanInput, MaintenanceRecordInput } from "./schema";
-import { createMaintenancePlan, deactivateMaintenancePlan, recordMaintenance, reportFault, updateFaultStatus } from "./service";
+import { FaultReportInput, FaultUpdateInput, MaintenancePlanInput, MaintenanceRecordInput } from "./schema";
+import { createMaintenancePlan, deactivateMaintenancePlan, recordMaintenance, reportFault, updateFault } from "./service";
 
 async function actor(permission: Permission) {
   const ctx = await requirePermission(permission);
@@ -33,17 +33,17 @@ export async function reportFaultAction(_prev: ActionState, formData: FormData):
   redirect(`/maintenance/faults/${id}`);
 }
 
-export async function updateFaultStatusAction(id: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+export async function updateFaultAction(id: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const who = await actor("fault.manage");
-  const parsed = FaultStatusInput.safeParse(formToObject(formData));
+  const parsed = FaultUpdateInput.safeParse(formToObject(formData));
   if (!parsed.success) return validationError(parsed.error);
   try {
-    await updateFaultStatus(db, who, id, parsed.data);
+    await updateFault(db, who, id, parsed.data);
   } catch (error) {
     return domainFailure(error);
   }
   refresh();
-  return { ok: true, message: "הסטטוס עודכן" };
+  return { ok: true, message: "התקלה עודכנה" };
 }
 
 export async function recordMaintenanceAction(_prev: ActionState, formData: FormData): Promise<ActionState> {

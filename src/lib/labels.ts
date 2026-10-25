@@ -1,5 +1,6 @@
 import type { BadgeTone } from "@/components/ui";
 import type {
+  ProcedureKind,
   EquipmentStatus,
   FaultSeverity,
   FaultStatus,
@@ -101,3 +102,16 @@ export const TASK_PRIORITY_TONES: Record<TaskPriority, BadgeTone> = {
 export function options<T extends string>(labels: Record<T, string>) {
   return (Object.keys(labels) as T[]).map((value) => ({ value, label: labels[value] }));
 }
+
+export const PROCEDURE_KIND_LABELS: Record<ProcedureKind, string> = {
+  SAFETY: "בטיחות",
+  OPERATION: "הפעלה",
+  MAINTENANCE: "תחזוקה",
+  GENERAL: "כללי",
+};
+export const PROCEDURE_KIND_TONES: Record<ProcedureKind, BadgeTone> = {
+  SAFETY: "red",
+  OPERATION: "blue",
+  MAINTENANCE: "orange",
+  GENERAL: "slate",
+};

@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { createEquipment } from "@/modules/equipment/service";
 import { MaintenancePlanInput } from "@/modules/maintenance/schema";
-import { createMaintenancePlan, recordMaintenance, reportFault, updateFaultStatus } from "@/modules/maintenance/service";
+import { createMaintenancePlan, recordMaintenance, reportFault, updateFault } from "@/modules/maintenance/service";
 import { createOrgWithAdmin, testDb } from "../helpers";
 
 const db = testDb();
@@ -32,7 +32,7 @@ describe("maintenance", () => {
   it("does not return equipment to service when the fault is closed", async () => {
     const { actor, equipment } = await setup();
     const fault = await reportFault(db, actor, { equipmentId: equipment.id, severity: "CRITICAL", description: "smoke" });
-    const closed = await updateFaultStatus(db, actor, fault.id, { status: "CLOSED" });
+    const closed = await updateFault(db, actor, fault.id, { status: "CLOSED" });
     expect(closed.resolvedAt).not.toBeNull();
     expect((await db.equipment.findUniqueOrThrow({ where: { id: equipment.id } })).status).toBe("OUT_OF_SERVICE");
   });

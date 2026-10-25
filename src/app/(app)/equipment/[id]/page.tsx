@@ -12,6 +12,8 @@ import {
   FAULT_STATUS_LABELS,
   MAINTENANCE_TYPE_LABELS,
   PLAN_SOURCE_LABELS,
+  PROCEDURE_KIND_LABELS,
+  PROCEDURE_KIND_TONES,
   TASK_STATUS_LABELS,
 } from "@/lib/labels";
 import { can } from "@/lib/permissions";
@@ -19,11 +21,15 @@ import { requirePermission } from "@/lib/session";
 import { changeEquipmentStatusAction } from "@/modules/equipment/actions";
 import { getEquipment, OPEN_FAULT_STATUSES } from "@/modules/equipment/service";
 import { EquipmentStatusForm } from "@/modules/equipment/status-form";
+import { listProcedures } from "@/modules/procedures/service";
 
 async function EquipmentDetail({ params }: { params: PageProps<"/equipment/[id]">["params"] }) {
   const ctx = await requirePermission("equipment.view");
   const { id } = await params;
-  const e = await getEquipment(db, ctx.organization.id, id);
+  const [e, procedures] = await Promise.all([
+    getEquipment(db, ctx.organization.id, id),
+    listProcedures(db, ctx.organization.id, { equipmentId: id }),
+  ]);
   if (!e || e.archivedAt) notFound();
 
   const openFaults = e.faultReports.filter((f) => (OPEN_FAULT_STATUSES as readonly string[]).includes(f.status));
@@ -80,6 +86,24 @@ async function EquipmentDetail({ params }: { params: PageProps<"/equipment/[id]"
             )}
           </Card>
 
+          <Card
+            title="נהלים"
+            actions={can(ctx.role, "procedure.manage") && <Link href={`/procedures/new?equipmentId=${e.id}`} className="text-sm text-blue-700 underline">הוספה</Link>}
+          >
+            {procedures.length === 0 ? (
+              <EmptyState>אין נהלים למכונה הזו.</EmptyState>
+            ) : (
+              <ul className="space-y-2">
+                {procedures.map((p) => (
+                  <li key={p.id} className="flex items-center gap-2">
+                    <Badge tone={PROCEDURE_KIND_TONES[p.kind]}>{PROCEDURE_KIND_LABELS[p.kind]}</Badge>
+                    <Link href={`/procedures/${p.id}`} className="text-blue-700 underline">{p.title}</Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
           <Card title="היסטוריית תקלות">
             {e.faultReports.length === 0 ? (
               <EmptyState>לא דווחו תקלות.</EmptyState>
@@ -94,6 +118,13 @@ async function EquipmentDetail({ params }: { params: PageProps<"/equipment/[id]"
                         <span className="text-sm text-slate-500">{formatDateTime(f.reportedAt)} · {f.reportedBy.name}</span>
                       </div>
                       <p className="mt-1 line-clamp-2">{f.description}</p>
+                      {(f.handledBy || f.expectedFixAt) && (
+                        <p className="text-sm text-slate-600">
+                          {f.handledBy && `מטפל: ${f.handledBy}`}
+                          {f.handledBy && f.expectedFixAt && " · "}
+                          {f.expectedFixAt && `יעד לתיקון: ${formatDate(f.expectedFixAt)}`}
+                        </p>
+                      )}
                     </Link>
                   </li>
                 ))}

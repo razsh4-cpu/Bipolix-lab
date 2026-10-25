@@ -16,6 +16,8 @@ export const PERMISSIONS = {
   "fault.manage": ["ADMIN"],
   "maintenance.record": ["ADMIN"],
   "task.manage": ["ADMIN"],
+  "procedure.view": ["ADMIN", "INSTRUCTOR", "VIEWER"],
+  "procedure.manage": ["ADMIN"],
   "task.updateOwn": ["ADMIN", "INSTRUCTOR"],
   "users.manage": ["ADMIN"],
   "settings.manage": ["ADMIN"],

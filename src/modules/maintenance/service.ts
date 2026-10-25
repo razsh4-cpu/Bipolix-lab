@@ -3,7 +3,7 @@ import { writeAudit } from "@/lib/audit";
 import { startOfToday } from "@/lib/dates";
 import { OPEN_FAULT_STATUSES } from "@/modules/equipment/service";
 import { DomainError, type Actor } from "@/modules/types";
-import type { FaultReportInput, FaultStatusInput, MaintenancePlanInput, MaintenanceRecordInput } from "./schema";
+import type { FaultReportInput, FaultUpdateInput, MaintenancePlanInput, MaintenanceRecordInput } from "./schema";
 
 // A critical fault takes the machine out of service until an authorised person
 // checks it. Closing the fault later does NOT return the machine to service.
@@ -41,23 +41,43 @@ export function reportFault(db: PrismaClient, actor: Actor, input: FaultReportIn
   });
 }
 
-export function updateFaultStatus(db: PrismaClient, actor: Actor, id: string, input: FaultStatusInput) {
+// Updates status/handler/target date and appends an entry to the fault's log.
+export function updateFault(db: PrismaClient, actor: Actor, id: string, input: FaultUpdateInput) {
   return db.$transaction(async (tx) => {
     const existing = await tx.faultReport.findFirst({ where: { id, organizationId: actor.organizationId } });
     if (!existing) throw new DomainError("התקלה לא נמצאה");
-    if (existing.status === input.status) return existing;
+    const handledBy = input.handledBy ?? null;
+    const expectedFixAt = input.expectedFixAt ?? null;
+    const statusChanged = existing.status !== input.status;
+    const changed =
+      statusChanged ||
+      existing.handledBy !== handledBy ||
+      existing.expectedFixAt?.getTime() !== expectedFixAt?.getTime() ||
+      Boolean(input.note);
+    if (!changed) return existing;
+
     const isDone = input.status === "RESOLVED" || input.status === "CLOSED";
     const fault = await tx.faultReport.update({
       where: { id },
-      data: { status: input.status, resolvedAt: isDone ? (existing.resolvedAt ?? new Date()) : null },
+      data: { status: input.status, handledBy, expectedFixAt, resolvedAt: isDone ? (existing.resolvedAt ?? new Date()) : null },
+    });
+    await tx.faultUpdate.create({
+      data: {
+        organizationId: actor.organizationId,
+        faultReportId: id,
+        authorId: actor.userId,
+        fromStatus: statusChanged ? existing.status : null,
+        toStatus: statusChanged ? input.status : null,
+        note: input.note ?? null,
+      },
     });
     await writeAudit(tx, {
       organizationId: actor.organizationId,
       actorId: actor.userId,
-      action: "fault.status",
+      action: "fault.update",
       entityType: "FaultReport",
       entityId: id,
-      details: { from: existing.status, to: input.status },
+      details: { from: existing.status, to: input.status, handledBy, expectedFixAt: expectedFixAt?.toISOString() ?? null },
     });
     return fault;
   });
@@ -170,6 +190,7 @@ export function getFault(db: PrismaClient, organizationId: string, id: string) {
       equipment: { select: { id: true, name: true, status: true } },
       reportedBy: { select: { name: true } },
       maintenance: { orderBy: { performedAt: "desc" }, include: { performedBy: { select: { name: true } } } },
+      updates: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } },
     },
   });
 }

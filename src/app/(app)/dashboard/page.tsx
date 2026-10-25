@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { startOfToday } from "@/lib/dates";
 import { db } from "@/lib/db";
-import { EQUIPMENT_STATUS_LABELS } from "@/lib/labels";
+import { formatDate } from "@/lib/forms";
+import { EQUIPMENT_STATUS_LABELS, FAULT_SEVERITY_LABELS, FAULT_STATUS_LABELS } from "@/lib/labels";
 import { can } from "@/lib/permissions";
 import { getOrgContext } from "@/lib/session";
+import { getMachineBoard, type Condition, type MachineBoardRow } from "@/modules/dashboard/machine-board";
 import { getDashboardStats, type DashboardStats } from "@/modules/dashboard/stats";
 
 export const metadata = { title: "דשבורד — LabOps" };
@@ -40,24 +43,12 @@ function Section({ title, href, children }: { title: string; href: string; child
 }
 
 function Alerts({ stats }: { stats: DashboardStats }) {
-  const { critical } = stats.equipment;
+  // Machines with critical faults are shown on the machine board above.
   const { lowStock, lowStockCount } = stats.inventory;
-  if (critical.length === 0 && lowStockCount === 0) return null;
+  if (lowStockCount === 0) return null;
 
   return (
     <div className="mb-6 grid gap-4 md:grid-cols-2">
-      {critical.length > 0 && (
-        <section role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4">
-          <h2 className="font-semibold text-red-900">ציוד עם תקלה קריטית פתוחה — לא זמין עד בדיקה</h2>
-          <ul className="mt-2 space-y-1 text-sm text-red-900">
-            {critical.map((e) => (
-              <li key={e.id}>
-                {e.name} · {EQUIPMENT_STATUS_LABELS[e.status]}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
       {lowStockCount > 0 && (
         <section role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
           <h2 className="font-semibold text-amber-900">פריטים מתחת לסף המינימום ({lowStockCount})</h2>
@@ -74,6 +65,76 @@ function Alerts({ stats }: { stats: DashboardStats }) {
   );
 }
 
+const CONDITION_STYLE: Record<Condition, { label: string; card: string; badge: string }> = {
+  ok: { label: "תקינה", card: "border-emerald-200", badge: "bg-emerald-100 text-emerald-800" },
+  attention: { label: "דורשת תשומת לב", card: "border-amber-300", badge: "bg-amber-100 text-amber-900" },
+  down: { label: "לא זמינה", card: "border-red-300 bg-red-50/40", badge: "bg-red-100 text-red-800" },
+};
+
+function MachineCard({ m, today }: { m: MachineBoardRow; today: Date }) {
+  const style = CONDITION_STYLE[m.condition];
+  return (
+    <li className={`rounded-xl border bg-white p-3 ${style.card}`}>
+      <Link href={`/equipment/${m.id}`} className="flex items-start justify-between gap-2">
+        <span className="font-semibold hover:underline">{m.name}</span>
+        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`}>{style.label}</span>
+      </Link>
+      {m.status !== "OPERATIONAL" && <p className="mt-1 text-sm text-slate-700">סטטוס: {EQUIPMENT_STATUS_LABELS[m.status]}</p>}
+      {m.faultReports.length > 0 && (
+        <ul className="mt-2 space-y-2">
+          {m.faultReports.map((f) => {
+            const late = f.expectedFixAt && f.expectedFixAt < today;
+            return (
+              <li key={f.id} className="text-sm">
+                <Link href={`/maintenance/faults/${f.id}`} className="block rounded-lg bg-slate-50 p-2 hover:bg-slate-100">
+                  <span className="line-clamp-2">{f.description}</span>
+                  <span className="mt-1 block text-xs text-slate-600">
+                    חומרה {FAULT_SEVERITY_LABELS[f.severity]} · {FAULT_STATUS_LABELS[f.status]}
+                    {" · "}
+                    {f.handledBy ? `מטפל: ${f.handledBy}` : <span className="text-amber-800">לא הוגדר מי מטפל</span>}
+                    {f.expectedFixAt && (
+                      <span className={late ? "font-medium text-red-700" : undefined}>
+                        {" · "}יעד: {formatDate(f.expectedFixAt)}{late && " (עבר)"}
+                      </span>
+                    )}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {m.plans.map((p) => (
+        <p key={p.title} className="mt-2 text-sm text-amber-900">טיפול באיחור: {p.title} ({formatDate(p.nextDueAt)})</p>
+      ))}
+    </li>
+  );
+}
+
+function MachineBoard({ machines }: { machines: MachineBoardRow[] }) {
+  if (machines.length === 0) return null;
+  const today = startOfToday(new Date());
+  const down = machines.filter((m) => m.condition === "down").length;
+  const ok = machines.filter((m) => m.condition === "ok").length;
+  return (
+    <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-lg font-semibold">
+          <Link href="/equipment" className="hover:text-blue-800 hover:underline">מצב המכונות</Link>
+        </h2>
+        <p className="text-sm text-slate-600">
+          {ok} מתוך {machines.length} תקינות{down > 0 && ` · ${down} לא זמינות`}
+        </p>
+      </div>
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {machines.map((m) => (
+          <MachineCard key={m.id} m={m} today={today} />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 async function DashboardContent() {
   const { organization, role } = await getOrgContext();
 
@@ -85,7 +146,7 @@ async function DashboardContent() {
     );
   }
 
-  const stats = await getDashboardStats(db, organization.id);
+  const [stats, machines] = await Promise.all([getDashboardStats(db, organization.id), getMachineBoard(db, organization.id)]);
   const isEmpty =
     stats.equipment.total === 0 &&
     stats.inventory.total === 0 &&
@@ -99,6 +160,7 @@ async function DashboardContent() {
           עדיין אין נתונים במערכת. המספרים יתעדכנו אוטומטית אחרי שיוזנו ציוד, פריטי מלאי, תקלות ומשימות.
         </p>
       )}
+      <MachineBoard machines={machines} />
       <Alerts stats={stats} />
       <div className="grid gap-4 md:grid-cols-2">
         <Section title="ציוד" href="/equipment">

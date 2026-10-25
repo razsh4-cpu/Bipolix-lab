@@ -14,8 +14,8 @@ import {
 } from "@/lib/labels";
 import { can } from "@/lib/permissions";
 import { requirePermission } from "@/lib/session";
-import { updateFaultStatusAction } from "@/modules/maintenance/actions";
-import { FaultStatusForm } from "@/modules/maintenance/forms";
+import { updateFaultAction } from "@/modules/maintenance/actions";
+import { FaultUpdateForm } from "@/modules/maintenance/forms";
 import { getFault } from "@/modules/maintenance/service";
 
 async function FaultDetail({ params }: { params: PageProps<"/maintenance/faults/[id]">["params"] }) {
@@ -47,6 +47,8 @@ async function FaultDetail({ params }: { params: PageProps<"/maintenance/faults/
               items={[
                 { label: "דווח על ידי", value: f.reportedBy.name },
                 { label: "מועד הדיווח", value: formatDateTime(f.reportedAt) },
+                { label: "מי מטפל", value: f.handledBy },
+                { label: "תאריך יעד לתיקון", value: formatDate(f.expectedFixAt) },
                 { label: "מועד טיפול", value: formatDateTime(f.resolvedAt) },
                 {
                   label: "סטטוס הציוד כעת",
@@ -58,6 +60,25 @@ async function FaultDetail({ params }: { params: PageProps<"/maintenance/faults/
                 },
               ]}
             />
+          </Card>
+          <Card title="יומן התקלה">
+            <ul className="divide-y divide-slate-100">
+              {f.updates.map((u) => (
+                <li key={u.id} className="py-3">
+                  <div className="text-sm text-slate-500">{formatDateTime(u.createdAt)} · {u.author.name}</div>
+                  {u.toStatus && (
+                    <p className="text-sm">
+                      סטטוס: {u.fromStatus ? FAULT_STATUS_LABELS[u.fromStatus] : "—"} ← {FAULT_STATUS_LABELS[u.toStatus]}
+                    </p>
+                  )}
+                  {u.note && <p className="whitespace-pre-wrap">{u.note}</p>}
+                </li>
+              ))}
+              <li className="py-3">
+                <div className="text-sm text-slate-500">{formatDateTime(f.reportedAt)} · {f.reportedBy.name}</div>
+                <p className="text-sm">התקלה דווחה</p>
+              </li>
+            </ul>
           </Card>
           <Card title="טיפולים שתועדו">
             {f.maintenance.length === 0 ? (
@@ -77,8 +98,8 @@ async function FaultDetail({ params }: { params: PageProps<"/maintenance/faults/
         </div>
         {can(ctx.role, "fault.manage") && (
           <div>
-            <Card title="עדכון סטטוס">
-              <FaultStatusForm action={updateFaultStatusAction.bind(null, f.id)} current={f.status} />
+            <Card title="עדכון טיפול">
+              <FaultUpdateForm action={updateFaultAction.bind(null, f.id)} current={f} />
             </Card>
           </div>
         )}

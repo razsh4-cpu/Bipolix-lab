@@ -24,17 +24,19 @@ model User {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  sessions      Session[]
-  accounts      Account[]
-  memberships   Membership[]
-  faultReports  FaultReport[]          @relation("FaultReporter")
-  maintenance   MaintenanceRecord[]    @relation("MaintenancePerformer")
-  transactions  InventoryTransaction[]
-  assignedTasks Task[]                 @relation("TaskAssignee")
-  createdTasks  Task[]                 @relation("TaskCreator")
-  documents     EquipmentDocument[]
-  auditLogs     AuditLog[]
-  bridgeTokens  BridgeToken[]
+  sessions           Session[]
+  accounts           Account[]
+  memberships        Membership[]
+  faultReports       FaultReport[]          @relation("FaultReporter")
+  faultUpdates       FaultUpdate[]
+  procedureRevisions ProcedureRevision[]
+  maintenance        MaintenanceRecord[]    @relation("MaintenancePerformer")
+  transactions       InventoryTransaction[]
+  assignedTasks      Task[]                 @relation("TaskAssignee")
+  createdTasks       Task[]                 @relation("TaskCreator")
+  documents          EquipmentDocument[]
+  auditLogs          AuditLog[]
+  bridgeTokens       BridgeToken[]
 
   @@map("user")
 }
@@ -108,19 +110,22 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  labs           Lab[]
-  memberships    Membership[]
-  equipment      Equipment[]
-  documents      EquipmentDocument[]
-  faultReports   FaultReport[]
-  maintenance    MaintenanceRecord[]
-  plans          MaintenancePlan[]
-  inventoryItems InventoryItem[]
-  transactions   InventoryTransaction[]
-  tasks          Task[]
-  auditLogs      AuditLog[]
-  printerLinks   PrinterLink[]
-  bridgeTokens   BridgeToken[]
+  labs               Lab[]
+  memberships        Membership[]
+  equipment          Equipment[]
+  documents          EquipmentDocument[]
+  faultReports       FaultReport[]
+  faultUpdates       FaultUpdate[]
+  procedures         Procedure[]
+  procedureRevisions ProcedureRevision[]
+  maintenance        MaintenanceRecord[]
+  plans              MaintenancePlan[]
+  inventoryItems     InventoryItem[]
+  transactions       InventoryTransaction[]
+  tasks              Task[]
+  auditLogs          AuditLog[]
+  printerLinks       PrinterLink[]
+  bridgeTokens       BridgeToken[]
 }
 
 model Lab {
@@ -189,6 +194,7 @@ model Equipment {
   plans        MaintenancePlan[]
   tasks        Task[]
   printerLink  PrinterLink?
+  procedures   Procedure[]
 
   @@index([organizationId, status])
   @@index([organizationId, name])
@@ -247,6 +253,9 @@ model FaultReport {
   reportedById   String
   reportedAt     DateTime      @default(now())
   resolvedAt     DateTime?
+  // Who is handling it: free text, since it is often an outside technician or supplier.
+  handledBy      String?
+  expectedFixAt  DateTime?     @db.Date
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -254,9 +263,28 @@ model FaultReport {
   equipment    Equipment           @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
   reportedBy   User                @relation("FaultReporter", fields: [reportedById], references: [id], onDelete: Restrict)
   maintenance  MaintenanceRecord[]
+  updates      FaultUpdate[]
 
   @@index([organizationId, status, severity])
   @@index([equipmentId])
+}
+
+// Append-only log of what happened with a fault (status changes and notes).
+model FaultUpdate {
+  id             String       @id @default(cuid())
+  organizationId String
+  faultReportId  String
+  authorId       String
+  fromStatus     FaultStatus?
+  toStatus       FaultStatus?
+  note           String?
+  createdAt      DateTime     @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  faultReport  FaultReport  @relation(fields: [faultReportId], references: [id], onDelete: Restrict)
+  author       User         @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([faultReportId, createdAt])
 }
 
 enum MaintenanceType {
@@ -501,4 +529,52 @@ model PrinterJob {
   printerLink PrinterLink @relation(fields: [printerLinkId], references: [id], onDelete: Cascade)
 
   @@index([printerLinkId, endedAt])
+}
+
+enum ProcedureKind {
+  SAFETY
+  OPERATION
+  MAINTENANCE
+  GENERAL
+}
+
+// A procedure is either for one machine or, with no equipment, for the whole lab.
+model Procedure {
+  id             String        @id @default(cuid())
+  organizationId String
+  equipmentId    String?
+  kind           ProcedureKind
+  title          String
+  body           String
+  // Where the content comes from (manufacturer manual, approved by ...). Required on save.
+  source         String
+  version        Int           @default(1)
+  archivedAt     DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  equipment    Equipment?          @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  revisions    ProcedureRevision[]
+
+  @@index([organizationId, equipmentId])
+}
+
+// Append-only: every saved version of a procedure.
+model ProcedureRevision {
+  id             String   @id @default(cuid())
+  organizationId String
+  procedureId    String
+  version        Int
+  title          String
+  body           String
+  source         String
+  editedById     String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  procedure    Procedure    @relation(fields: [procedureId], references: [id], onDelete: Restrict)
+  editedBy     User         @relation(fields: [editedById], references: [id], onDelete: Restrict)
+
+  @@unique([procedureId, version])
 }

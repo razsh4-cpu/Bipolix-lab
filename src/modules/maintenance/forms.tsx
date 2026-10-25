@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { FormMessage, SelectField, TextAreaField, TextField } from "@/components/form-fields";
 import { BUTTON_PRIMARY, BUTTON_SECONDARY } from "@/components/ui";
 import type { FaultSeverity, FaultStatus } from "@/generated/prisma/enums";
-import { initialActionState, type ActionState } from "@/lib/forms";
+import { initialActionState, toDateInput, type ActionState } from "@/lib/forms";
 import { FAULT_SEVERITY_LABELS, FAULT_STATUS_LABELS, MAINTENANCE_TYPE_LABELS, options, PLAN_SOURCE_LABELS } from "@/lib/labels";
 
 type Action = (prev: ActionState, formData: FormData) => Promise<ActionState>;
@@ -57,15 +57,24 @@ export function FaultReportForm({ action, equipment, equipmentId }: { action: Ac
   );
 }
 
-export function FaultStatusForm({ action, current }: { action: Action; current: FaultStatus }) {
+export function FaultUpdateForm({
+  action,
+  current,
+}: {
+  action: Action;
+  current: { status: FaultStatus; handledBy: string | null; expectedFixAt: Date | null };
+}) {
   const [state, formAction, pending] = useActionState(action, initialActionState);
   return (
     <form action={formAction} className="space-y-3">
-      <SelectField name="status" label="סטטוס התקלה" state={state} defaultValue={current} options={options(FAULT_STATUS_LABELS)} />
+      <SelectField name="status" label="סטטוס התקלה" state={state} defaultValue={current.status} options={options(FAULT_STATUS_LABELS)} />
+      <TextField name="handledBy" label="מי מטפל" state={state} defaultValue={current.handledBy ?? ""} hint="למשל: רז, טכנאי של הספק" />
+      <TextField name="expectedFixAt" label="תאריך יעד לתיקון" type="date" state={state} defaultValue={toDateInput(current.expectedFixAt)} />
+      <TextAreaField name="note" label="עדכון (יישמר ביומן התקלה)" state={state} rows={3} />
       <p className="text-xs text-slate-500">סגירת התקלה לא מחזירה את הציוד לפעילות. את סטטוס הציוד משנים בכרטיס הציוד.</p>
       <FormMessage state={state} />
       <button type="submit" disabled={pending} className={BUTTON_SECONDARY}>
-        {pending ? "מעדכן…" : "עדכון"}
+        {pending ? "שומר…" : "שמירת עדכון"}
       </button>
     </form>
   );

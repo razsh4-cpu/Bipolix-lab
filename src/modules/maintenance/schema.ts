@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { FaultSeverity, FaultStatus, MaintenanceType, PlanSource } from "@/generated/prisma/enums";
-import { optionalText, requiredDate, requiredText } from "@/lib/forms";
+import { optionalDate, optionalText, requiredDate, requiredText } from "@/lib/forms";
 
 export const FaultReportInput = z.object({
   equipmentId: z.string({ error: "יש לבחור ציוד" }).min(1, "יש לבחור ציוד"),
@@ -9,10 +9,13 @@ export const FaultReportInput = z.object({
 });
 export type FaultReportInput = z.infer<typeof FaultReportInput>;
 
-export const FaultStatusInput = z.object({
+export const FaultUpdateInput = z.object({
   status: z.enum(FaultStatus, { error: "סטטוס לא תקין" }),
+  handledBy: optionalText(160),
+  expectedFixAt: optionalDate,
+  note: optionalText(2000),
 });
-export type FaultStatusInput = z.infer<typeof FaultStatusInput>;
+export type FaultUpdateInput = z.infer<typeof FaultUpdateInput>;
 
 export const MaintenanceRecordInput = z.object({
   equipmentId: z.string({ error: "יש לבחור ציוד" }).min(1, "יש לבחור ציוד"),

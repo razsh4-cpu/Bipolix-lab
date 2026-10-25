@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/inventory", label: "מלאי", ready: true },
   { href: "/maintenance", label: "תקלות ותחזוקה", ready: true },
   { href: "/tasks", label: "משימות", ready: true },
+  { href: "/procedures", label: "נהלים", ready: true },
 ] as const;
 
 async function CurrentUser() {
