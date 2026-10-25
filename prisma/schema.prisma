@@ -14,15 +14,15 @@ datasource db {
 // ───────────────────────── Auth (Better Auth) ─────────────────────────
 
 model User {
-  id              String    @id
+  id              String   @id
   name            String
-  email           String    @unique
-  emailVerified   Boolean   @default(false)
+  email           String   @unique
+  emailVerified   Boolean  @default(false)
   image           String?
-  isPlatformAdmin Boolean   @default(false)
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  isPlatformAdmin Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   sessions      Session[]
   accounts      Account[]
@@ -34,6 +34,7 @@ model User {
   createdTasks  Task[]                 @relation("TaskCreator")
   documents     EquipmentDocument[]
   auditLogs     AuditLog[]
+  bridgeTokens  BridgeToken[]
 
   @@map("user")
 }
@@ -118,6 +119,8 @@ model Organization {
   transactions   InventoryTransaction[]
   tasks          Task[]
   auditLogs      AuditLog[]
+  printerLinks   PrinterLink[]
+  bridgeTokens   BridgeToken[]
 }
 
 model Lab {
@@ -185,6 +188,7 @@ model Equipment {
   maintenance  MaintenanceRecord[]
   plans        MaintenancePlan[]
   tasks        Task[]
+  printerLink  PrinterLink?
 
   @@index([organizationId, status])
   @@index([organizationId, name])
@@ -416,4 +420,85 @@ model AuditLog {
   actor        User?         @relation(fields: [actorId], references: [id], onDelete: Restrict)
 
   @@index([organizationId, createdAt])
+}
+
+// ───────────────────────── Printer integration (read-only) ─────────────────────────
+
+enum PrinterVendor {
+  BAMBU_LAB
+}
+
+// Links a piece of equipment to a networked printer by its serial number.
+// Network address and access code never reach the app: they stay on the bridge device.
+model PrinterLink {
+  id             String        @id @default(cuid())
+  organizationId String
+  equipmentId    String        @unique
+  vendor         PrinterVendor
+  serialNumber   String
+  createdAt      DateTime      @default(now())
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  equipment    Equipment      @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  status       PrinterStatus?
+  jobs         PrinterJob[]
+
+  @@unique([organizationId, serialNumber])
+}
+
+// Latest known state of a printer, as last reported by a bridge.
+model PrinterStatus {
+  printerLinkId    String    @id
+  online           Boolean
+  state            String?
+  jobName          String?
+  progressPercent  Int?
+  remainingMinutes Int?
+  layer            Int?
+  totalLayers      Int?
+  nozzleTemps      Json?
+  bedTemp          Float?
+  chamberTemp      Float?
+  hmsAlerts        Json?
+  filaments        Json?
+  jobStartedAt     DateTime?
+  reportedAt       DateTime
+  receivedAt       DateTime  @default(now()) @updatedAt
+
+  printerLink PrinterLink @relation(fields: [printerLinkId], references: [id], onDelete: Cascade)
+}
+
+// Credential a bridge device uses to push status. Only a SHA-256 hash is stored.
+model BridgeToken {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  tokenHash      String    @unique
+  createdById    String
+  lastSeenAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
+}
+
+enum PrinterJobResult {
+  FINISHED
+  FAILED
+}
+
+// A completed print, derived from state transitions reported by the bridge.
+// Used for daily summaries and print-hour totals.
+model PrinterJob {
+  id            String           @id @default(cuid())
+  printerLinkId String
+  jobName       String?
+  startedAt     DateTime
+  endedAt       DateTime
+  result        PrinterJobResult
+
+  printerLink PrinterLink @relation(fields: [printerLinkId], references: [id], onDelete: Cascade)
+
+  @@index([printerLinkId, endedAt])
 }
