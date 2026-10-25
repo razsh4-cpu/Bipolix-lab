@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { MainNav } from "@/components/main-nav";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ROLE_LABELS } from "@/lib/labels";
 import { getOrgContext } from "@/lib/session";
@@ -7,7 +8,7 @@ import { getOrgContext } from "@/lib/session";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "דשבורד", ready: true },
   { href: "/equipment", label: "ציוד", ready: true },
-  { href: "/inventory", label: "מלאי", ready: false },
+  { href: "/inventory", label: "מלאי", ready: true },
   { href: "/maintenance", label: "תקלות ותחזוקה", ready: false },
   { href: "/tasks", label: "משימות", ready: false },
 ] as const;
@@ -40,32 +41,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
             <CurrentUser />
           </Suspense>
         </div>
-        <nav aria-label="ניווט ראשי" className="mx-auto max-w-7xl overflow-x-auto px-4">
-          <ul className="flex gap-1 whitespace-nowrap">
-            {NAV_ITEMS.map((item) =>
-              item.ready ? (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className="block border-b-2 border-blue-700 px-3 py-2 text-sm font-medium text-blue-800"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ) : (
-                <li key={item.href}>
-                  <span
-                    aria-disabled="true"
-                    title="יתווסף בשלב הבא"
-                    className="block px-3 py-2 text-sm text-slate-400"
-                  >
-                    {item.label} <span className="text-xs">(בקרוב)</span>
-                  </span>
-                </li>
-              ),
-            )}
-          </ul>
-        </nav>
+        <MainNav items={NAV_ITEMS} />
       </header>
       <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
     </div>
