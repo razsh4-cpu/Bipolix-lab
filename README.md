@@ -10,7 +10,12 @@ Multi-tenant from day one (Organization → Lab → data). Hebrew RTL UI; code a
 | Data model (all MVP modules, multi-tenant) | Done, migrated |
 | Email + password login, server-side role checks | Done |
 | Dashboard (real data, empty state, mobile) | Done |
-| Equipment, Inventory, Maintenance, Tasks screens | Not started |
+| Equipment: list, search, create/edit, detail, status | Done |
+| Inventory: items, receive/issue/adjust (atomic), history | Done |
+| Faults & maintenance: report, status, records, plans | Done |
+| Tasks: create, assign, my tasks, status, overdue | Done |
+| File uploads (equipment images/documents) | Not started |
+| User management screen | Not started (use `npm run admin:create`) |
 
 ## Stack
 

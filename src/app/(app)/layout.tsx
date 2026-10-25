@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { MainNav } from "@/components/main-nav";
+import { MainNav, NavList } from "@/components/main-nav";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ROLE_LABELS } from "@/lib/labels";
 import { getOrgContext } from "@/lib/session";
@@ -41,7 +41,9 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
             <CurrentUser />
           </Suspense>
         </div>
-        <MainNav items={NAV_ITEMS} />
+        <Suspense fallback={<NavList items={NAV_ITEMS} pathname="" />}>
+          <MainNav items={NAV_ITEMS} />
+        </Suspense>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
     </div>

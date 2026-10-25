@@ -6,7 +6,11 @@ import { usePathname } from "next/navigation";
 export type NavItem = { href: string; label: string; ready: boolean };
 
 export function MainNav({ items }: { items: readonly NavItem[] }) {
-  const pathname = usePathname();
+  return <NavList items={items} pathname={usePathname()} />;
+}
+
+// Pure render, also used as the Suspense fallback before the pathname is known.
+export function NavList({ items, pathname }: { items: readonly NavItem[]; pathname: string }) {
   return (
     <nav aria-label="ניווט ראשי" className="mx-auto max-w-7xl overflow-x-auto px-4">
       <ul className="flex gap-1 whitespace-nowrap">
