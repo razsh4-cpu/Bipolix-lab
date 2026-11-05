@@ -14,7 +14,8 @@
     "postinstall": "prisma generate",
     "admin:create": "tsx scripts/create-admin.ts",
     "seed:demo": "tsx scripts/seed-demo.ts",
-    "lab:machines": "tsx scripts/add-lab-machines.ts"
+    "lab:machines": "tsx scripts/add-lab-machines.ts",
+    "vercel-build": "prisma generate && prisma migrate deploy && tsx scripts/bootstrap.ts && next build"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",

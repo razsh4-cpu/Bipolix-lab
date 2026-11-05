@@ -3,7 +3,12 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { db } from "@/lib/db";
 
+// On Vercel the production address is known without extra setup.
+const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+const baseURL = process.env.BETTER_AUTH_URL || (vercelUrl ? `https://${vercelUrl}` : undefined);
+
 export const auth = betterAuth({
+  baseURL,
   database: prismaAdapter(db, { provider: "postgresql" }),
   emailAndPassword: {
     enabled: true,

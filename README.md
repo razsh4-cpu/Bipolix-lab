@@ -61,3 +61,17 @@ npm run build
 - `InventoryTransaction` and `AuditLog` are append-only (database triggers block UPDATE and DELETE).
 - Maintenance plans must record their source (manufacturer or admin); intervals are never invented.
 - Deactivated users cannot sign in.
+
+## Deploying (Vercel + Neon, free tiers)
+
+1. Create a Neon project (region Frankfurt) and copy the **direct** connection string (connection pooling off), because migrations need a direct connection.
+2. Import the repository in Vercel (Hobby). `vercel.json` pins functions to `fra1`, close to Neon Frankfurt.
+3. Set these environment variables in Vercel → Settings → Environment Variables:
+   - `DATABASE_URL`: the Neon connection string
+   - `BETTER_AUTH_SECRET`: a random string of 32+ characters
+   - `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_NAME`, `BOOTSTRAP_ADMIN_PASSWORD` (10+ characters): first deploy only
+   - optional: `BOOTSTRAP_ORG_NAME`, `BOOTSTRAP_ORG_SLUG`, and `BETTER_AUTH_URL` if a custom domain is used (otherwise the Vercel production URL is used)
+4. Deploy. The `vercel-build` script runs `prisma migrate deploy`, then `scripts/bootstrap.ts` (creates the admin, organization and truck machines once; later builds skip it), then `next build`.
+5. After the first login, delete the three `BOOTSTRAP_ADMIN_*` variables.
+
+Note: Vercel's Hobby plan is for non-commercial personal use. Move to a paid plan or institutional hosting if the lab adopts the system officially.
