@@ -10,6 +10,8 @@ const heebo = Heebo({
 export const metadata: Metadata = {
   title: "LabOps — ניהול מעבדה",
   description: "מערכת לניהול מעבדות טכנולוגיות ומרכזי ייצור",
+  // Internal tool: keep every page out of search engines.
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
