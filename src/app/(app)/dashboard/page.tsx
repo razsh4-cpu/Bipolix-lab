@@ -107,6 +107,17 @@ function MachineCard({ m, today }: { m: MachineBoardRow; today: Date }) {
       {m.plans.map((p) => (
         <p key={p.title} className="mt-2 text-sm text-amber-900">טיפול באיחור: {p.title} ({formatDate(p.nextDueAt)})</p>
       ))}
+      {m.lowStock.length > 0 && (
+        <p className="mt-2 text-sm text-amber-900">
+          מלאי חסר:{" "}
+          {m.lowStock.map((i, idx) => (
+            <span key={i.id}>
+              {idx > 0 && ", "}
+              <Link href={`/inventory/${i.id}`} className="underline">{i.name}</Link> ({Number(i.quantity)} {i.unit})
+            </span>
+          ))}
+        </p>
+      )}
     </li>
   );
 }

@@ -27,7 +27,12 @@ async function InventoryList({ searchParams }: { searchParams: PageProps<"/inven
     <>
       <PageHeader
         title="מלאי"
-        actions={can(ctx.role, "inventory.manage") && <LinkButton href="/inventory/new">הוספת פריט</LinkButton>}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            {can(ctx.role, "inventory.issue") && <LinkButton href="/inventory/quick">הזנה מהירה</LinkButton>}
+            {can(ctx.role, "inventory.manage") && <LinkButton href="/inventory/new" variant="secondary">הוספת פריט</LinkButton>}
+          </div>
+        }
       />
       <form className="mb-4 flex flex-wrap items-center gap-2" role="search">
         <input name="q" defaultValue={q} placeholder="חיפוש לפי שם, ספק, מיקום" aria-label="חיפוש" className={`${FILTER_INPUT} min-w-0 flex-1 basis-56`} />
@@ -56,7 +61,9 @@ async function InventoryList({ searchParams }: { searchParams: PageProps<"/inven
                 <Link href={`/inventory/${i.id}`} className="flex flex-wrap items-center justify-between gap-2 px-1 py-3 hover:bg-slate-50">
                   <div className="min-w-0">
                     <div className="font-medium">{i.name}</div>
-                    <div className="text-sm text-slate-500">{[i.category, i.storageLocation].filter(Boolean).join(" · ")}</div>
+                    <div className="text-sm text-slate-500">
+                      {[i.category, i.storageLocation, i.machines.map((m) => m.equipment.name).join(", ")].filter(Boolean).join(" · ")}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {i.isLow && <Badge tone="amber">מתחת לסף ({Number(i.minStockLevel)})</Badge>}

@@ -17,6 +17,7 @@ type BoardMachine = {
   status: EquipmentStatus;
   faultReports: BoardFault[];
   plans: { title: string; nextDueAt: Date }[];
+  lowStock?: unknown[];
 };
 
 const SEVERITY_RANK: Record<FaultSeverity, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
@@ -28,6 +29,7 @@ export function machineCondition(m: BoardMachine, today: Date): Condition {
   if (m.faultReports.some((f) => f.severity === "CRITICAL")) return "down";
   if (m.status === "LIMITED_OPERATION" || m.faultReports.length > 0) return "attention";
   if (m.plans.some((p) => p.nextDueAt < today)) return "attention";
+  if (m.lowStock && m.lowStock.length > 0) return "attention";
   return "ok";
 }
 
@@ -53,15 +55,26 @@ export async function getMachineBoard(db: PrismaClient, organizationId: string, 
         orderBy: { nextDueAt: "asc" },
         select: { title: true, nextDueAt: true },
       },
+      inventoryItems: {
+        where: { item: { archivedAt: null, minStockLevel: { not: null } } },
+        select: { item: { select: { id: true, name: true, unit: true, quantity: true, minStockLevel: true } } },
+      },
     },
   });
 
   return machines
-    .map((m) => ({
-      ...m,
-      faultReports: [...m.faultReports].sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]),
-      condition: machineCondition(m, today),
-    }))
+    .map(({ inventoryItems, ...m }) => {
+      const lowStock = inventoryItems
+        .map((l) => l.item)
+        .filter((i) => i.minStockLevel !== null && i.quantity.lessThan(i.minStockLevel))
+        .map((i) => ({ id: i.id, name: i.name, unit: i.unit, quantity: i.quantity.toString() }));
+      const row = {
+        ...m,
+        faultReports: [...m.faultReports].sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]),
+        lowStock,
+      };
+      return { ...row, condition: machineCondition(row, today) };
+    })
     .sort((a, b) => CONDITION_ORDER[a.condition] - CONDITION_ORDER[b.condition]);
 }
 

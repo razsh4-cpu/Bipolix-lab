@@ -17,14 +17,18 @@ export const InventoryItemInput = z.object({
   storageLocation: optionalText(120),
   supplier: optionalText(120),
   unitCost: z.string().regex(/^\d{1,8}(\.\d{1,2})?$/, "מחיר לא תקין").optional(),
+  // How much one tap on the quick-entry screen adds or removes.
+  quickStep: positiveQuantity.optional(),
+  // Machines this item serves (spare parts, consumables, filament).
+  equipmentIds: z.array(z.string().min(1)).max(50).default([]),
   notes: optionalText(2000),
 });
-export type InventoryItemInput = z.infer<typeof InventoryItemInput>;
+export type InventoryItemInput = z.input<typeof InventoryItemInput>;
 
 export const NewInventoryItemInput = InventoryItemInput.extend({
   initialQuantity: quantityString.optional(),
 });
-export type NewInventoryItemInput = z.infer<typeof NewInventoryItemInput>;
+export type NewInventoryItemInput = z.input<typeof NewInventoryItemInput>;
 
 export const StockMovementInput = z.discriminatedUnion("type", [
   z.object({ type: z.literal("RECEIVE"), quantity: positiveQuantity, reason: optionalText(300) }),
@@ -34,6 +38,12 @@ export const StockMovementInput = z.discriminatedUnion("type", [
 ], { error: "סוג תנועה לא תקין" });
 export type StockMovementInput = z.infer<typeof StockMovementInput>;
 
+export const QuickMovementInput = z.object({
+  type: z.enum(["RECEIVE", "ISSUE"], { error: "סוג תנועה לא תקין" }),
+});
+
+export const INVENTORY_UNIT_SUGGESTIONS = ["יח'", "גליל", "גרם", "ק״ג", "מטר", "לוח", "ליטר", "חבילה"];
+
 export const INVENTORY_CATEGORY_SUGGESTIONS = [
   "עץ",
   "אקריליק",
@@ -41,6 +51,8 @@ export const INVENTORY_CATEGORY_SUGGESTIONS = [
   "פילמנט",
   "כלי חיתוך",
   "חלקי חילוף",
+  "נחירים",
+  "להבים",
   "אלקטרוניקה",
   "מתכלים",
   "אחר",

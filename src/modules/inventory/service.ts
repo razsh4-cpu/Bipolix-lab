@@ -3,16 +3,21 @@ import { writeAudit } from "@/lib/audit";
 import { DomainError, type Actor } from "@/modules/types";
 import type { InventoryItemInput, NewInventoryItemInput, StockMovementInput } from "./schema";
 
-export type InventoryFilters = { q?: string; category?: string; lowOnly?: boolean };
+export type InventoryFilters = { q?: string; category?: string; lowOnly?: boolean; equipmentId?: string };
 
 export async function listInventory(db: PrismaClient, organizationId: string, filters: InventoryFilters = {}) {
   const where: Prisma.InventoryItemWhereInput = { organizationId, archivedAt: null };
   if (filters.category) where.category = filters.category;
+  if (filters.equipmentId) where.machines = { some: { equipmentId: filters.equipmentId } };
   if (filters.q) {
     const contains = { contains: filters.q, mode: "insensitive" as const };
     where.OR = [{ name: contains }, { supplier: contains }, { storageLocation: contains }];
   }
-  const items = await db.inventoryItem.findMany({ where, orderBy: { name: "asc" } });
+  const items = await db.inventoryItem.findMany({
+    where,
+    orderBy: { name: "asc" },
+    include: { machines: { select: { equipment: { select: { id: true, name: true } } } } },
+  });
   const withFlag = items.map((i) => ({ ...i, isLow: i.minStockLevel !== null && i.quantity.lessThan(i.minStockLevel) }));
   return filters.lowOnly ? withFlag.filter((i) => i.isLow) : withFlag;
 }
@@ -32,9 +37,21 @@ export function getInventoryItem(db: PrismaClient, organizationId: string, id: s
     where: { id, organizationId },
     include: {
       lab: { select: { name: true } },
+      machines: { select: { equipment: { select: { id: true, name: true } } } },
       transactions: { orderBy: { createdAt: "desc" }, take: 50, include: { user: { select: { name: true } } } },
     },
   });
+}
+
+// Replaces the item's machine links; every machine must belong to the same organization.
+async function setMachines(tx: Prisma.TransactionClient, organizationId: string, itemId: string, equipmentIds: string[]) {
+  const ids = [...new Set(equipmentIds)];
+  const found = await tx.equipment.count({ where: { id: { in: ids }, organizationId, archivedAt: null } });
+  if (found !== ids.length) throw new DomainError("אחת המכונות שנבחרו לא נמצאה");
+  await tx.inventoryItemEquipment.deleteMany({ where: { itemId } });
+  if (ids.length > 0) {
+    await tx.inventoryItemEquipment.createMany({ data: ids.map((equipmentId) => ({ organizationId, itemId, equipmentId })) });
+  }
 }
 
 async function assertLabInOrg(tx: Prisma.TransactionClient, organizationId: string, labId?: string) {
@@ -44,11 +61,12 @@ async function assertLabInOrg(tx: Prisma.TransactionClient, organizationId: stri
 }
 
 export function createInventoryItem(db: PrismaClient, actor: Actor, input: NewInventoryItemInput) {
-  const { initialQuantity, ...data } = input;
+  const { initialQuantity, equipmentIds = [], ...data } = input;
   return db.$transaction(async (tx) => {
     await assertLabInOrg(tx, actor.organizationId, data.labId);
     const quantity = initialQuantity ?? "0";
     const item = await tx.inventoryItem.create({ data: { ...data, quantity, organizationId: actor.organizationId } });
+    await setMachines(tx, actor.organizationId, item.id, equipmentIds);
     if (Number(quantity) > 0) {
       await tx.inventoryTransaction.create({
         data: {
@@ -75,15 +93,16 @@ export function createInventoryItem(db: PrismaClient, actor: Actor, input: NewIn
 }
 
 // Quantity is never edited here: it changes only through stock movements.
-export function updateInventoryItem(db: PrismaClient, actor: Actor, id: string, input: InventoryItemInput) {
+export function updateInventoryItem(db: PrismaClient, actor: Actor, id: string, { equipmentIds = [], ...input }: InventoryItemInput) {
   return db.$transaction(async (tx) => {
     const existing = await tx.inventoryItem.findFirst({ where: { id, organizationId: actor.organizationId } });
     if (!existing) throw new DomainError("הפריט לא נמצא");
     await assertLabInOrg(tx, actor.organizationId, input.labId);
     const item = await tx.inventoryItem.update({
       where: { id },
-      data: { labId: null, minStockLevel: null, storageLocation: null, supplier: null, unitCost: null, notes: null, ...input },
+      data: { labId: null, minStockLevel: null, storageLocation: null, supplier: null, unitCost: null, notes: null, quickStep: "1", ...input },
     });
+    await setMachines(tx, actor.organizationId, id, equipmentIds);
     await writeAudit(tx, {
       organizationId: actor.organizationId,
       actorId: actor.userId,

@@ -21,14 +21,16 @@ import { requirePermission } from "@/lib/session";
 import { changeEquipmentStatusAction } from "@/modules/equipment/actions";
 import { getEquipment, OPEN_FAULT_STATUSES } from "@/modules/equipment/service";
 import { EquipmentStatusForm } from "@/modules/equipment/status-form";
+import { listInventory } from "@/modules/inventory/service";
 import { listProcedures } from "@/modules/procedures/service";
 
 async function EquipmentDetail({ params }: { params: PageProps<"/equipment/[id]">["params"] }) {
   const ctx = await requirePermission("equipment.view");
   const { id } = await params;
-  const [e, procedures] = await Promise.all([
+  const [e, procedures, inventory] = await Promise.all([
     getEquipment(db, ctx.organization.id, id),
     listProcedures(db, ctx.organization.id, { equipmentId: id }),
+    listInventory(db, ctx.organization.id, { equipmentId: id }),
   ]);
   if (!e || e.archivedAt) notFound();
 
@@ -98,6 +100,37 @@ async function EquipmentDetail({ params }: { params: PageProps<"/equipment/[id]"
                   <li key={p.id} className="flex items-center gap-2">
                     <Badge tone={PROCEDURE_KIND_TONES[p.kind]}>{PROCEDURE_KIND_LABELS[p.kind]}</Badge>
                     <Link href={`/procedures/${p.id}`} className="text-blue-700 underline">{p.title}</Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Card
+            title="מלאי למכונה"
+            actions={
+              <span className="flex gap-3 text-sm">
+                {inventory.length > 0 && can(ctx.role, "inventory.issue") && (
+                  <Link href={`/inventory/quick?machine=${e.id}`} className="text-blue-700 underline">הזנה מהירה</Link>
+                )}
+                {can(ctx.role, "inventory.manage") && (
+                  <Link href={`/inventory/new?equipmentId=${e.id}`} className="text-blue-700 underline">הוספה</Link>
+                )}
+              </span>
+            }
+          >
+            {inventory.length === 0 ? (
+              <EmptyState>אין פריטי מלאי שמקושרים למכונה הזו.</EmptyState>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {inventory.map((i) => (
+                  <li key={i.id}>
+                    <Link href={`/inventory/${i.id}`} className="flex items-center justify-between gap-2 py-2 hover:bg-slate-50">
+                      <span>{i.name}</span>
+                      <span className={`tabular-nums ${i.isLow ? "font-semibold text-amber-700" : ""}`}>
+                        {Number(i.quantity)} {i.unit}{i.isLow && " · מתחת לסף"}
+                      </span>
+                    </Link>
                   </li>
                 ))}
               </ul>

@@ -49,6 +49,17 @@ async function ItemDetail({ params }: { params: PageProps<"/inventory/[id]">["pa
             <DetailList
               items={[
                 { label: "קטגוריה", value: item.category },
+                {
+                  label: "משמש למכונות",
+                  value:
+                    item.machines.length > 0 ? (
+                      <span className="flex flex-wrap gap-x-3">
+                        {item.machines.map((m) => (
+                          <Link key={m.equipment.id} href={`/equipment/${m.equipment.id}`} className="text-blue-700 underline">{m.equipment.name}</Link>
+                        ))}
+                      </span>
+                    ) : null,
+                },
                 { label: "סף מינימום", value: item.minStockLevel ? `${Number(item.minStockLevel)} ${item.unit}` : "ללא" },
                 { label: "מיקום אחסון", value: item.storageLocation },
                 { label: "ספק", value: item.supplier },

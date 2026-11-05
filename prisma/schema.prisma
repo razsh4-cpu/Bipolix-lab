@@ -110,22 +110,23 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  labs               Lab[]
-  memberships        Membership[]
-  equipment          Equipment[]
-  documents          EquipmentDocument[]
-  faultReports       FaultReport[]
-  faultUpdates       FaultUpdate[]
-  procedures         Procedure[]
-  procedureRevisions ProcedureRevision[]
-  maintenance        MaintenanceRecord[]
-  plans              MaintenancePlan[]
-  inventoryItems     InventoryItem[]
-  transactions       InventoryTransaction[]
-  tasks              Task[]
-  auditLogs          AuditLog[]
-  printerLinks       PrinterLink[]
-  bridgeTokens       BridgeToken[]
+  labs                    Lab[]
+  memberships             Membership[]
+  equipment               Equipment[]
+  documents               EquipmentDocument[]
+  faultReports            FaultReport[]
+  faultUpdates            FaultUpdate[]
+  procedures              Procedure[]
+  procedureRevisions      ProcedureRevision[]
+  maintenance             MaintenanceRecord[]
+  plans                   MaintenancePlan[]
+  inventoryItems          InventoryItem[]
+  transactions            InventoryTransaction[]
+  tasks                   Task[]
+  auditLogs               AuditLog[]
+  printerLinks            PrinterLink[]
+  bridgeTokens            BridgeToken[]
+  inventoryItemEquipments InventoryItemEquipment[]
 }
 
 model Lab {
@@ -186,15 +187,16 @@ model Equipment {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
-  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  lab          Lab?                @relation(fields: [labId], references: [id], onDelete: SetNull)
-  documents    EquipmentDocument[]
-  faultReports FaultReport[]
-  maintenance  MaintenanceRecord[]
-  plans        MaintenancePlan[]
-  tasks        Task[]
-  printerLink  PrinterLink?
-  procedures   Procedure[]
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lab            Lab?                     @relation(fields: [labId], references: [id], onDelete: SetNull)
+  documents      EquipmentDocument[]
+  faultReports   FaultReport[]
+  maintenance    MaintenanceRecord[]
+  plans          MaintenancePlan[]
+  tasks          Task[]
+  printerLink    PrinterLink?
+  procedures     Procedure[]
+  inventoryItems InventoryItemEquipment[]
 
   @@index([organizationId, status])
   @@index([organizationId, name])
@@ -353,14 +355,17 @@ model InventoryItem {
   storageLocation String?
   supplier        String?
   unitCost        Decimal?  @db.Decimal(10, 2)
+  // Amount added/removed by one tap on the quick-entry screen.
+  quickStep       Decimal   @default(1) @db.Decimal(12, 3)
   notes           String?
   archivedAt      DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  lab          Lab?                   @relation(fields: [labId], references: [id], onDelete: SetNull)
+  organization Organization             @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  lab          Lab?                     @relation(fields: [labId], references: [id], onDelete: SetNull)
   transactions InventoryTransaction[]
+  machines     InventoryItemEquipment[]
 
   @@index([organizationId, name])
 }
@@ -577,4 +582,18 @@ model ProcedureRevision {
   editedBy     User         @relation(fields: [editedById], references: [id], onDelete: Restrict)
 
   @@unique([procedureId, version])
+}
+
+// Which machines an inventory item serves (spare parts, consumables, filament).
+model InventoryItemEquipment {
+  organizationId String
+  itemId         String
+  equipmentId    String
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  item         InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  equipment    Equipment     @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, equipmentId])
+  @@index([equipmentId])
 }

@@ -14,6 +14,8 @@ type Item = {
   storageLocation: string | null;
   supplier: string | null;
   unitCost: string | null;
+  quickStep: string;
+  equipmentIds: string[];
   notes: string | null;
 };
 
@@ -21,12 +23,18 @@ export function InventoryItemForm({
   action,
   labs,
   categories,
+  units,
+  equipment,
+  defaultEquipmentId,
   item,
   submitLabel,
 }: {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   labs: { id: string; name: string }[];
   categories: string[];
+  units: string[];
+  equipment: { id: string; name: string }[];
+  defaultEquipmentId?: string;
   item?: Item;
   submitLabel: string;
 }) {
@@ -46,11 +54,19 @@ export function InventoryItemForm({
             ))}
           </datalist>
         </div>
-        <TextField name="unit" label="יחידת מידה" state={state} required defaultValue={v(item?.unit)} hint="למשל: יח', מ״ר, ק״ג, גליל" />
+        <div>
+          <TextField name="unit" label="יחידת מידה" state={state} required list="inventory-units" defaultValue={v(item?.unit)} hint="למשל: יח', גליל, גרם, לוח" />
+          <datalist id="inventory-units">
+            {units.map((u) => (
+              <option key={u} value={u} />
+            ))}
+          </datalist>
+        </div>
         {!item && (
           <TextField name="initialQuantity" label="כמות התחלתית" state={state} inputMode="decimal" dir="ltr" hint="נרשמת כתנועת קליטה. אפשר להשאיר ריק" />
         )}
         <TextField name="minStockLevel" label="סף מינימום" state={state} inputMode="decimal" dir="ltr" defaultValue={v(item?.minStockLevel)} hint="מתחתיו תוצג התראה. ריק = ללא התראה" />
+        <TextField name="quickStep" label="כמות לכל לחיצה בהזנה מהירה" state={state} inputMode="decimal" dir="ltr" defaultValue={item?.quickStep ?? "1"} hint="למשל 1 גליל, או 50 גרם" />
         <TextField name="storageLocation" label="מיקום אחסון" state={state} defaultValue={v(item?.storageLocation)} />
         <TextField name="supplier" label="ספק" state={state} defaultValue={v(item?.supplier)} />
         <TextField name="unitCost" label="מחיר ליחידה (₪)" state={state} inputMode="decimal" dir="ltr" defaultValue={v(item?.unitCost)} />
@@ -65,6 +81,24 @@ export function InventoryItemForm({
           />
         )}
       </div>
+      {equipment.length > 0 && (
+        <fieldset>
+          <legend className="mb-2 text-sm font-medium">משמש למכונות</legend>
+          <div className="flex flex-wrap gap-2">
+            {equipment.map((e) => (
+              <label key={e.id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50">
+                <input
+                  type="checkbox"
+                  name="equipmentIds"
+                  value={e.id}
+                  defaultChecked={item ? item.equipmentIds.includes(e.id) : e.id === defaultEquipmentId}
+                />
+                {e.name}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
       <TextAreaField name="notes" label="הערות" state={state} defaultValue={v(item?.notes)} />
       <button type="submit" disabled={pending} className={`${BUTTON_PRIMARY} w-full sm:w-auto`}>
         {pending ? "שומר…" : submitLabel}
