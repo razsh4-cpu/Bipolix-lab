@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { MainNav, NavList } from "@/components/main-nav";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ROLE_LABELS } from "@/lib/labels";
+import { can } from "@/lib/permissions";
 import { getOrgContext } from "@/lib/session";
 
 const NAV_ITEMS = [
@@ -26,6 +27,9 @@ async function CurrentUser() {
           {role && ` · ${ROLE_LABELS[role]}`}
         </div>
       </div>
+      {role && can(role, "users.manage") && (
+        <Link href="/users" className="text-blue-700 underline">משתמשים</Link>
+      )}
       <SignOutButton />
     </div>
   );

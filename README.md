@@ -17,7 +17,7 @@ Multi-tenant from day one (Organization → Lab → data). Hebrew RTL UI; code a
 | Faults & maintenance: report, status, records, plans | Done |
 | Tasks: create, assign, my tasks, status, overdue | Done |
 | File uploads (equipment images/documents) | Not started |
-| User management screen | Not started (use `npm run admin:create`) |
+| User management: add staff, roles, deactivate, reset password | Done |
 | Spools loaded in Bambu printers (read-only bridge) | Waiting for a test on a real X2D |
 
 ## Stack
