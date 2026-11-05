@@ -9,13 +9,16 @@ Multi-tenant from day one (Organization → Lab → data). Hebrew RTL UI; code a
 | --- | --- |
 | Data model (all MVP modules, multi-tenant) | Done, migrated |
 | Email + password login, server-side role checks | Done |
-| Dashboard (real data, empty state, mobile) | Done |
+| Dashboard: alerts, truck location and schedule, machine board, material readiness | Done |
+| Truck schedule (activities, location, workshops) | Done |
+| Procedures per machine / general, versioned | Done |
 | Equipment: list, search, create/edit, detail, status | Done |
-| Inventory: items, receive/issue/adjust (atomic), history | Done |
+| Inventory: items, receive/issue/adjust (atomic), history, linked to machines, quick entry | Done |
 | Faults & maintenance: report, status, records, plans | Done |
 | Tasks: create, assign, my tasks, status, overdue | Done |
 | File uploads (equipment images/documents) | Not started |
 | User management screen | Not started (use `npm run admin:create`) |
+| Spools loaded in Bambu printers (read-only bridge) | Waiting for a test on a real X2D |
 
 ## Stack
 
@@ -29,6 +32,7 @@ docker compose up -d db           # or use any PostgreSQL 16
 npm install                       # also generates the Prisma client
 npx prisma migrate deploy
 npm run admin:create -- --email you@example.com --name "Your Name" --org "Organization" --slug org --lab "Lab name" --lab-type MOBILE
+npm run lab:machines -- --slug org   # adds the truck's machines: CNC, laser cutter, Cricut, 2× Bambu X2D
 npm run dev                       # http://localhost:3000
 ```
 

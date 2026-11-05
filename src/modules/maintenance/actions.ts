@@ -23,7 +23,7 @@ function domainFailure(error: unknown): ActionState {
 export async function reportFaultAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const who = await actor("fault.report");
   const parsed = FaultReportInput.safeParse(formToObject(formData));
-  if (!parsed.success) return validationError(parsed.error);
+  if (!parsed.success) return validationError(parsed.error, formData);
   let id: string;
   try {
     id = (await reportFault(db, who, parsed.data)).id;
@@ -36,7 +36,7 @@ export async function reportFaultAction(_prev: ActionState, formData: FormData):
 export async function updateFaultAction(id: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const who = await actor("fault.manage");
   const parsed = FaultUpdateInput.safeParse(formToObject(formData));
-  if (!parsed.success) return validationError(parsed.error);
+  if (!parsed.success) return validationError(parsed.error, formData);
   try {
     await updateFault(db, who, id, parsed.data);
   } catch (error) {
@@ -49,7 +49,7 @@ export async function updateFaultAction(id: string, _prev: ActionState, formData
 export async function recordMaintenanceAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const who = await actor("maintenance.record");
   const parsed = MaintenanceRecordInput.safeParse(formToObject(formData));
-  if (!parsed.success) return validationError(parsed.error);
+  if (!parsed.success) return validationError(parsed.error, formData);
   try {
     await recordMaintenance(db, who, parsed.data);
   } catch (error) {
@@ -61,7 +61,7 @@ export async function recordMaintenanceAction(_prev: ActionState, formData: Form
 export async function createMaintenancePlanAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const who = await actor("maintenance.record");
   const parsed = MaintenancePlanInput.safeParse(formToObject(formData));
-  if (!parsed.success) return validationError(parsed.error);
+  if (!parsed.success) return validationError(parsed.error, formData);
   try {
     await createMaintenancePlan(db, who, parsed.data);
   } catch (error) {

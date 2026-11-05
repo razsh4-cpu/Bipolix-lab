@@ -22,7 +22,7 @@ async function actor() {
 export async function createProcedureAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const who = await actor();
   const parsed = ProcedureInput.safeParse(formToObject(formData));
-  if (!parsed.success) return validationError(parsed.error);
+  if (!parsed.success) return validationError(parsed.error, formData);
   let id: string;
   try {
     id = (await createProcedure(db, who, parsed.data)).id;
@@ -35,7 +35,7 @@ export async function createProcedureAction(_prev: ActionState, formData: FormDa
 export async function updateProcedureAction(id: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const who = await actor();
   const parsed = ProcedureInput.safeParse(formToObject(formData));
-  if (!parsed.success) return validationError(parsed.error);
+  if (!parsed.success) return validationError(parsed.error, formData);
   try {
     await updateProcedure(db, who, id, parsed.data);
   } catch (error) {

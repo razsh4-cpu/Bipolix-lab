@@ -1,0 +1,63 @@
+"use client";
+
+import { useActionState } from "react";
+import { FormMessage, SelectField, TextAreaField, TextField } from "@/components/form-fields";
+import { BUTTON_PRIMARY } from "@/components/ui";
+import type { ActivityStatus } from "@/generated/prisma/enums";
+import { initialActionState, toDateInput, type ActionState } from "@/lib/forms";
+import { ACTIVITY_STATUS_LABELS, options } from "@/lib/labels";
+
+type Activity = {
+  title: string;
+  date: Date;
+  startTime: string | null;
+  endTime: string | null;
+  location: string;
+  audience: string | null;
+  participants: number | null;
+  status: ActivityStatus;
+  notes: string | null;
+};
+
+export function ActivityForm({
+  action,
+  activity,
+  locations,
+  submitLabel,
+}: {
+  action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
+  activity?: Activity;
+  locations: string[];
+  submitLabel: string;
+}) {
+  const [state, formAction, pending] = useActionState(action, initialActionState);
+  const v = (x: string | null | undefined) => x ?? undefined;
+  return (
+    <form action={formAction} className="space-y-5" noValidate>
+      <FormMessage state={state} />
+      <TextField name="title" label="שם הפעילות / הסדנה" state={state} required defaultValue={v(activity?.title)} />
+      <div className="grid gap-4 sm:grid-cols-3">
+        <TextField name="date" label="תאריך" type="date" state={state} required defaultValue={toDateInput(activity?.date)} />
+        <TextField name="startTime" label="שעת התחלה" type="time" state={state} dir="ltr" defaultValue={v(activity?.startTime)} />
+        <TextField name="endTime" label="שעת סיום" type="time" state={state} dir="ltr" defaultValue={v(activity?.endTime)} />
+      </div>
+      <div>
+        <TextField name="location" label="מיקום" state={state} required list="activity-locations" defaultValue={v(activity?.location)} hint="למשל: מכללת ספיר, או שם בית הספר והעיר" />
+        <datalist id="activity-locations">
+          {locations.map((l) => (
+            <option key={l} value={l} />
+          ))}
+        </datalist>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <TextField name="audience" label="קהל" state={state} defaultValue={v(activity?.audience)} hint="קבוצה בלבד, בלי שמות. למשל: כיתה ח'" />
+        <TextField name="participants" label="מספר משתתפים" state={state} inputMode="numeric" dir="ltr" defaultValue={activity?.participants ?? undefined} />
+        <SelectField name="status" label="סטטוס" state={state} defaultValue={activity?.status ?? "PLANNED"} options={options(ACTIVITY_STATUS_LABELS)} />
+      </div>
+      <TextAreaField name="notes" label="הערות (חומרים, מכונות, הכנות)" state={state} rows={3} defaultValue={v(activity?.notes)} />
+      <button type="submit" disabled={pending} className={`${BUTTON_PRIMARY} w-full sm:w-auto`}>
+        {pending ? "שומר…" : submitLabel}
+      </button>
+    </form>
+  );
+}

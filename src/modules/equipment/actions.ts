@@ -22,7 +22,7 @@ function domainFailure(error: unknown): ActionState {
 export async function createEquipmentAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const who = await actor("equipment.manage");
   const parsed = EquipmentInput.safeParse(formToObject(formData));
-  if (!parsed.success) return validationError(parsed.error);
+  if (!parsed.success) return validationError(parsed.error, formData);
   let id: string;
   try {
     id = (await createEquipment(db, who, parsed.data)).id;
@@ -35,7 +35,7 @@ export async function createEquipmentAction(_prev: ActionState, formData: FormDa
 export async function updateEquipmentAction(id: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const who = await actor("equipment.manage");
   const parsed = EquipmentInput.safeParse(formToObject(formData));
-  if (!parsed.success) return validationError(parsed.error);
+  if (!parsed.success) return validationError(parsed.error, formData);
   try {
     await updateEquipment(db, who, id, parsed.data);
   } catch (error) {
@@ -47,7 +47,7 @@ export async function updateEquipmentAction(id: string, _prev: ActionState, form
 export async function changeEquipmentStatusAction(id: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const who = await actor("equipment.returnToService");
   const parsed = EquipmentStatusChange.safeParse(formToObject(formData));
-  if (!parsed.success) return validationError(parsed.error);
+  if (!parsed.success) return validationError(parsed.error, formData);
   try {
     await changeEquipmentStatus(db, who, id, parsed.data);
   } catch (error) {

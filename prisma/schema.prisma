@@ -127,6 +127,7 @@ model Organization {
   printerLinks            PrinterLink[]
   bridgeTokens            BridgeToken[]
   inventoryItemEquipments InventoryItemEquipment[]
+  activities              Activity[]
 }
 
 model Lab {
@@ -163,6 +164,7 @@ model Membership {
 
 enum EquipmentStatus {
   OPERATIONAL
+  IN_USE
   LIMITED_OPERATION
   UNDER_MAINTENANCE
   OUT_OF_SERVICE
@@ -596,4 +598,32 @@ model InventoryItemEquipment {
 
   @@id([itemId, equipmentId])
   @@index([equipmentId])
+}
+
+enum ActivityStatus {
+  PLANNED
+  DONE
+  CANCELLED
+}
+
+// A truck activity: where the truck is on a given day and which workshop runs there.
+// Holds no personal data about participants, only a group description and a count.
+model Activity {
+  id             String         @id @default(cuid())
+  organizationId String
+  title          String
+  date           DateTime       @db.Date
+  startTime      String?
+  endTime        String?
+  location       String
+  audience       String?
+  participants   Int?
+  status         ActivityStatus @default(PLANNED)
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, date])
 }

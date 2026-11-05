@@ -1,5 +1,6 @@
 import type { BadgeTone } from "@/components/ui";
 import type {
+  ActivityStatus,
   ProcedureKind,
   EquipmentStatus,
   FaultSeverity,
@@ -20,6 +21,7 @@ export const ROLE_LABELS: Record<MemberRole, string> = {
 
 export const EQUIPMENT_STATUS_LABELS: Record<EquipmentStatus, string> = {
   OPERATIONAL: "תקין",
+  IN_USE: "בשימוש",
   LIMITED_OPERATION: "פעילות מוגבלת",
   UNDER_MAINTENANCE: "בטיפול",
   OUT_OF_SERVICE: "מושבת",
@@ -27,6 +29,7 @@ export const EQUIPMENT_STATUS_LABELS: Record<EquipmentStatus, string> = {
 
 export const EQUIPMENT_STATUS_TONES: Record<EquipmentStatus, BadgeTone> = {
   OPERATIONAL: "green",
+  IN_USE: "blue",
   LIMITED_OPERATION: "amber",
   UNDER_MAINTENANCE: "orange",
   OUT_OF_SERVICE: "red",
@@ -114,4 +117,15 @@ export const PROCEDURE_KIND_TONES: Record<ProcedureKind, BadgeTone> = {
   OPERATION: "blue",
   MAINTENANCE: "orange",
   GENERAL: "slate",
+};
+
+export const ACTIVITY_STATUS_LABELS: Record<ActivityStatus, string> = {
+  PLANNED: "מתוכננת",
+  DONE: "בוצעה",
+  CANCELLED: "בוטלה",
+};
+export const ACTIVITY_STATUS_TONES: Record<ActivityStatus, BadgeTone> = {
+  PLANNED: "blue",
+  DONE: "green",
+  CANCELLED: "slate",
 };

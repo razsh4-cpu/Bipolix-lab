@@ -13,6 +13,12 @@ type BaseProps = {
   hint?: string;
 };
 
+// After a failed submit, show what the user typed instead of the original value.
+function initial(state: ActionState, name: string, fallback: string | number | undefined) {
+  const v = state.values?.[name];
+  return typeof v === "string" ? v : fallback;
+}
+
 function FieldShell({ name, label, state, required, hint, children }: BaseProps & { children: React.ReactNode }) {
   const errors = state.fieldErrors?.[name];
   return (
@@ -47,7 +53,7 @@ export function TextField(
         step={props.step}
         min={props.min}
         list={props.list}
-        defaultValue={props.defaultValue}
+        defaultValue={initial(props.state, props.name, props.defaultValue)}
         required={props.required}
         aria-invalid={invalid}
         aria-describedby={invalid ? `${props.name}-error` : undefined}
@@ -65,7 +71,7 @@ export function TextAreaField(props: BaseProps & { defaultValue?: string; rows?:
         id={props.name}
         name={props.name}
         rows={props.rows ?? 3}
-        defaultValue={props.defaultValue}
+        defaultValue={initial(props.state, props.name, props.defaultValue)}
         required={props.required}
         aria-invalid={invalid}
         className={INPUT}
@@ -83,7 +89,7 @@ export function SelectField(
       <select
         id={props.name}
         name={props.name}
-        defaultValue={props.defaultValue ?? ""}
+        defaultValue={initial(props.state, props.name, props.defaultValue) ?? ""}
         required={props.required}
         aria-invalid={invalid}
         className={INPUT}

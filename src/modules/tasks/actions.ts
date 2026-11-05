@@ -17,7 +17,7 @@ function domainFailure(error: unknown): ActionState {
 export async function createTaskAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const ctx = await requirePermission("task.manage");
   const parsed = TaskInput.safeParse(formToObject(formData));
-  if (!parsed.success) return validationError(parsed.error);
+  if (!parsed.success) return validationError(parsed.error, formData);
   let id: string;
   try {
     id = (await createTask(db, { organizationId: ctx.organization.id, userId: ctx.user.id }, parsed.data)).id;
@@ -30,7 +30,7 @@ export async function createTaskAction(_prev: ActionState, formData: FormData): 
 export async function updateTaskAction(id: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const ctx = await requirePermission("task.manage");
   const parsed = TaskInput.safeParse(formToObject(formData));
-  if (!parsed.success) return validationError(parsed.error);
+  if (!parsed.success) return validationError(parsed.error, formData);
   try {
     await updateTask(db, { organizationId: ctx.organization.id, userId: ctx.user.id }, id, parsed.data);
   } catch (error) {
@@ -42,7 +42,7 @@ export async function updateTaskAction(id: string, _prev: ActionState, formData:
 export async function updateTaskStatusAction(id: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const ctx = await requirePermission("task.updateOwn");
   const parsed = TaskStatusInput.safeParse(formToObject(formData));
-  if (!parsed.success) return validationError(parsed.error);
+  if (!parsed.success) return validationError(parsed.error, formData);
   try {
     await updateTaskStatus(db, { organizationId: ctx.organization.id, userId: ctx.user.id, role: ctx.role }, id, parsed.data);
   } catch (error) {

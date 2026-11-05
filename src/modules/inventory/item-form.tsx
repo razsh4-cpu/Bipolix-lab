@@ -40,6 +40,10 @@ export function InventoryItemForm({
 }) {
   const [state, formAction, pending] = useActionState(action, initialActionState);
   const v = (x: string | null | undefined) => x ?? undefined;
+  const submitted = state.values?.equipmentIds;
+  const checkedMachines = state.values
+    ? (Array.isArray(submitted) ? submitted : submitted ? [submitted] : [])
+    : (item?.equipmentIds ?? (defaultEquipmentId ? [defaultEquipmentId] : []));
 
   return (
     <form action={formAction} className="space-y-6" noValidate>
@@ -91,7 +95,7 @@ export function InventoryItemForm({
                   type="checkbox"
                   name="equipmentIds"
                   value={e.id}
-                  defaultChecked={item ? item.equipmentIds.includes(e.id) : e.id === defaultEquipmentId}
+                  defaultChecked={checkedMachines.includes(e.id)}
                 />
                 {e.name}
               </label>

@@ -4,6 +4,9 @@ export type ActionState = {
   ok: boolean;
   message?: string;
   fieldErrors?: Record<string, string[] | undefined>;
+  // What the user submitted, so the form can show it again after an error
+  // (React resets uncontrolled form fields after every form action).
+  values?: Record<string, string | string[]>;
 };
 
 export const initialActionState: ActionState = { ok: false };
@@ -34,8 +37,23 @@ export const requiredDate = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, "תאריך לא תקין")
   .transform((s) => new Date(`${s}T00:00:00Z`));
 
-export function validationError(error: z.ZodError): ActionState {
-  return { ok: false, message: "יש לתקן את השדות המסומנים", fieldErrors: z.flattenError(error).fieldErrors };
+export function submittedValues(formData: FormData) {
+  const out: Record<string, string | string[]> = {};
+  for (const key of new Set(formData.keys())) {
+    if (key.startsWith("$ACTION")) continue;
+    const all = formData.getAll(key).filter((v): v is string => typeof v === "string");
+    out[key] = all.length > 1 ? all : (all[0] ?? "");
+  }
+  return out;
+}
+
+export function validationError(error: z.ZodError, formData?: FormData): ActionState {
+  return {
+    ok: false,
+    message: "יש לתקן את השדות המסומנים",
+    fieldErrors: z.flattenError(error).fieldErrors,
+    values: formData ? submittedValues(formData) : undefined,
+  };
 }
 
 export function toDateInput(date: Date | null | undefined) {

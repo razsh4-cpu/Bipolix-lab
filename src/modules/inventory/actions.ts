@@ -34,7 +34,7 @@ function domainFailure(error: unknown): ActionState {
 export async function createInventoryItemAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const who = await actor("inventory.manage");
   const parsed = NewInventoryItemInput.safeParse(itemFields(formData));
-  if (!parsed.success) return validationError(parsed.error);
+  if (!parsed.success) return validationError(parsed.error, formData);
   let id: string;
   try {
     id = (await createInventoryItem(db, who, parsed.data)).id;
@@ -47,7 +47,7 @@ export async function createInventoryItemAction(_prev: ActionState, formData: Fo
 export async function updateInventoryItemAction(id: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const who = await actor("inventory.manage");
   const parsed = InventoryItemInput.safeParse(itemFields(formData));
-  if (!parsed.success) return validationError(parsed.error);
+  if (!parsed.success) return validationError(parsed.error, formData);
   try {
     await updateInventoryItem(db, who, id, parsed.data);
   } catch (error) {
@@ -58,7 +58,7 @@ export async function updateInventoryItemAction(id: string, _prev: ActionState, 
 
 export async function recordStockMovementAction(itemId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const parsed = StockMovementInput.safeParse(formToObject(formData));
-  if (!parsed.success) return validationError(parsed.error);
+  if (!parsed.success) return validationError(parsed.error, formData);
   const who = await actor(MOVEMENT_PERMISSION[parsed.data.type]);
   try {
     await recordStockMovement(db, who, itemId, parsed.data);
