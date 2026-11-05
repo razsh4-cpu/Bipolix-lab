@@ -17,7 +17,18 @@ const NAV_ITEMS = [
 ] as const;
 
 async function CurrentUser() {
-  const { user, role, organization } = await getOrgContext();
+  const { user, role, organization, isGuest } = await getOrgContext();
+  if (isGuest) {
+    return (
+      <div className="flex items-center gap-3 text-sm">
+        <div className="text-left leading-tight" dir="auto">
+          <div className="font-medium">{organization?.name}</div>
+          <div className="text-slate-500">צפייה בלבד</div>
+        </div>
+        <Link href="/login" className="rounded-lg bg-blue-600 px-3 py-1.5 text-white hover:bg-blue-700">כניסה</Link>
+      </div>
+    );
+  }
   return (
     <div className="flex items-center gap-3 text-sm">
       <div className="text-left leading-tight" dir="auto">

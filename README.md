@@ -74,4 +74,8 @@ npm run build
 4. Deploy. The `vercel-build` script runs `prisma migrate deploy`, then `scripts/bootstrap.ts` (creates the admin, organization and truck machines once; later builds skip it), then `next build`.
 5. After the first login, delete the three `BOOTSTRAP_ADMIN_*` variables.
 
+### Public read-only viewing
+
+Set `PUBLIC_VIEW_ORG_SLUG` (for example `mobile-lab`) to let anyone with the link view that organization without logging in, as a viewer. Every change still requires a login, `/users` stays admin-only, and all pages carry `noindex`. Remove the variable and redeploy to turn it off.
+
 Note: Vercel's Hobby plan is for non-commercial personal use. Move to a paid plan or institutional hosting if the lab adopts the system officially.
