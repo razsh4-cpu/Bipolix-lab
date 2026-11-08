@@ -74,6 +74,8 @@ npm run build
 4. Deploy. The `vercel-build` script runs `prisma migrate deploy`, then `scripts/bootstrap.ts` (creates the admin, organization and truck machines once; later builds skip it), then `next build`.
 5. After the first login, delete the three `BOOTSTRAP_ADMIN_*` variables.
 
+**Lost the admin login?** Set `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` (10+ characters) and `ADMIN_RESET=1`, then redeploy. If that user exists, its password is replaced, it is reactivated, made ADMIN and signed out everywhere; otherwise it is created as a new admin of the organization. No other data changes. Log in, then delete all three variables and redeploy.
+
 ### Public read-only viewing
 
 Set `PUBLIC_VIEW_ORG_SLUG` (for example `mobile-lab`) to let anyone with the link view that organization without logging in, as a viewer. Every change still requires a login, `/users` stays admin-only, and all pages carry `noindex`. Remove the variable and redeploy to turn it off.

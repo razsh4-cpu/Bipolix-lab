@@ -52,6 +52,47 @@ export async function createAdmin(db: PrismaClient, input: NewAdmin) {
   return true;
 }
 
+// Recovery for a lost admin login (bootstrap with ADMIN_RESET=1). An existing user gets the
+// new password, is reactivated, made ADMIN of the organization and signed out everywhere;
+// a missing user is created as a new admin. Nothing else in the database is touched.
+export async function resetAdmin(db: PrismaClient, input: NewAdmin): Promise<"created" | "reset"> {
+  if (await createAdmin(db, input)) return "created";
+  const email = input.email.toLowerCase();
+  const passwordHash = await hashPassword(input.password);
+  await db.$transaction(async (tx) => {
+    const user = await tx.user.update({ where: { email }, data: { isActive: true } });
+    const organization = await tx.organization.upsert({
+      where: { slug: input.slug },
+      update: {},
+      create: { name: input.org, slug: input.slug },
+    });
+    const account = await tx.account.findFirst({ where: { userId: user.id, providerId: "credential" } });
+    if (account) {
+      await tx.account.update({ where: { id: account.id }, data: { password: passwordHash } });
+    } else {
+      await tx.account.create({
+        data: { id: randomUUID(), accountId: user.id, providerId: "credential", userId: user.id, password: passwordHash },
+      });
+    }
+    await tx.membership.upsert({
+      where: { userId_organizationId: { userId: user.id, organizationId: organization.id } },
+      update: { role: "ADMIN" },
+      create: { userId: user.id, organizationId: organization.id, role: "ADMIN" },
+    });
+    await tx.session.deleteMany({ where: { userId: user.id } });
+    await tx.auditLog.create({
+      data: {
+        organizationId: organization.id,
+        action: "user.admin_reset",
+        entityType: "User",
+        entityId: user.id,
+        details: { via: "ADMIN_RESET on deploy" },
+      },
+    });
+  });
+  return "reset";
+}
+
 const MACHINE_NOTE = "נוסף מרשימת המכונות הראשונית. יש לאמת סטטוס, יצרן, דגם ומספר סידורי.";
 
 // Only facts Raz gave are filled in (type, and Bambu Lab X2D for the printers).
