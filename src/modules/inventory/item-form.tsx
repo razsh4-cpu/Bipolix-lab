@@ -1,11 +1,11 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { FormMessage, SelectField, TextAreaField, TextField } from "@/components/form-fields";
+import { FormMessage, TextField } from "@/components/form-fields";
 import { BUTTON_PRIMARY } from "@/components/ui";
 import { initialActionState, type ActionState } from "@/lib/forms";
 import { ColorField } from "./color-field";
-import { isFilamentCategory } from "./schema";
+import { defaultUnitFor, isFilamentCategory } from "./schema";
 
 type Item = {
   name: string;
@@ -22,21 +22,21 @@ type Item = {
   notes: string | null;
 };
 
+// Kept short on purpose: name, category, quantity and (for filament) colour.
+// Fields that are no longer shown keep their stored values through hidden
+// inputs, because saving an item replaces every field.
 export function InventoryItemForm({
   action,
-  labs,
   categories,
-  units,
-  equipment,
   defaultEquipmentId,
   item,
   submitLabel,
 }: {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
-  labs: { id: string; name: string }[];
+  labs?: { id: string; name: string }[];
   categories: string[];
-  units: string[];
-  equipment: { id: string; name: string }[];
+  units?: string[];
+  equipment?: { id: string; name: string }[];
   defaultEquipmentId?: string;
   item?: Item;
   submitLabel: string;
@@ -45,13 +45,20 @@ export function InventoryItemForm({
   const v = (x: string | null | undefined) => x ?? undefined;
   const submittedCategory = state.values?.category;
   const [category, setCategory] = useState(typeof submittedCategory === "string" ? submittedCategory : (item?.category ?? ""));
-  // Colour matters for printing filament; other items keep the form short.
-  // An item that already has a colour keeps the picker so the colour is not dropped silently.
   const showColor = isFilamentCategory(category) || Boolean(item?.color);
-  const submitted = state.values?.equipmentIds;
-  const checkedMachines = state.values
-    ? (Array.isArray(submitted) ? submitted : submitted ? [submitted] : [])
-    : (item?.equipmentIds ?? (defaultEquipmentId ? [defaultEquipmentId] : []));
+  const machineIds = item?.equipmentIds ?? (defaultEquipmentId ? [defaultEquipmentId] : []);
+  const kept: [string, string | null | undefined][] = item
+    ? [
+        ["unit", item.unit],
+        ["labId", item.labId],
+        ["minStockLevel", item.minStockLevel],
+        ["storageLocation", item.storageLocation],
+        ["supplier", item.supplier],
+        ["unitCost", item.unitCost],
+        ["quickStep", item.quickStep],
+        ["notes", item.notes],
+      ]
+    : [["unit", defaultUnitFor(category)]];
 
   return (
     <form
@@ -64,6 +71,8 @@ export function InventoryItemForm({
       }}
     >
       <FormMessage state={state} />
+      {kept.map(([name, value]) => value != null && value !== "" && <input key={name} type="hidden" name={name} value={value} />)}
+      {machineIds.map((id) => <input key={id} type="hidden" name="equipmentIds" value={id} />)}
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField name="name" label="שם הפריט" state={state} required defaultValue={v(item?.name)} />
         <div>
@@ -74,53 +83,11 @@ export function InventoryItemForm({
             ))}
           </datalist>
         </div>
-        {showColor && <ColorField state={state} defaultValue={item?.color} />}
-        <div>
-          <TextField name="unit" label="יחידת מידה" state={state} required list="inventory-units" defaultValue={v(item?.unit)} hint="למשל: יח', גליל, גרם, לוח" />
-          <datalist id="inventory-units">
-            {units.map((u) => (
-              <option key={u} value={u} />
-            ))}
-          </datalist>
-        </div>
         {!item && (
-          <TextField name="initialQuantity" label="כמות התחלתית" state={state} inputMode="decimal" dir="ltr" hint="נרשמת כתנועת קליטה. אפשר להשאיר ריק" />
+          <TextField name="initialQuantity" label="כמות" state={state} inputMode="decimal" dir="ltr" hint={isFilamentCategory(category) ? "מספר גלילים" : undefined} />
         )}
-        <TextField name="minStockLevel" label="סף מינימום" state={state} inputMode="decimal" dir="ltr" defaultValue={v(item?.minStockLevel)} hint="מתחתיו תוצג התראה. ריק = ללא התראה" />
-        <TextField name="quickStep" label="כמות לכל לחיצה בהזנה מהירה" state={state} inputMode="decimal" dir="ltr" defaultValue={item?.quickStep ?? "1"} hint="למשל 1 גליל, או 50 גרם" />
-        <TextField name="storageLocation" label="מיקום אחסון" state={state} defaultValue={v(item?.storageLocation)} />
-        <TextField name="supplier" label="ספק" state={state} defaultValue={v(item?.supplier)} />
-        <TextField name="unitCost" label="מחיר ליחידה (₪)" state={state} inputMode="decimal" dir="ltr" defaultValue={v(item?.unitCost)} />
-        {labs.length > 0 && (
-          <SelectField
-            name="labId"
-            label="מעבדה"
-            state={state}
-            defaultValue={v(item?.labId)}
-            placeholder="ללא שיוך"
-            options={labs.map((l) => ({ value: l.id, label: l.name }))}
-          />
-        )}
+        {showColor && <ColorField state={state} defaultValue={item?.color} />}
       </div>
-      {equipment.length > 0 && (
-        <fieldset>
-          <legend className="mb-2 text-sm font-medium">משמש למכונות</legend>
-          <div className="flex flex-wrap gap-2">
-            {equipment.map((e) => (
-              <label key={e.id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50">
-                <input
-                  type="checkbox"
-                  name="equipmentIds"
-                  value={e.id}
-                  defaultChecked={checkedMachines.includes(e.id)}
-                />
-                {e.name}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      )}
-      <TextAreaField name="notes" label="הערות" state={state} defaultValue={v(item?.notes)} />
       <button type="submit" disabled={pending} className={`${BUTTON_PRIMARY} w-full sm:w-auto`}>
         {pending ? "שומר…" : submitLabel}
       </button>
