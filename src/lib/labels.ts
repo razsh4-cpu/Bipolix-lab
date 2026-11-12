@@ -10,6 +10,8 @@ import type {
   MaintenanceType,
   MemberRole,
   PlanSource,
+  DevelopmentStatus,
+  SuggestionStatus,
   TaskPriority,
   TaskStatus,
 } from "@/generated/prisma/enums";
@@ -51,8 +53,37 @@ export const DEFAULT_EQUIPMENT_CATEGORIES = [
   "לייזר",
   "מדפסת תלת-ממד",
   "כללי",
-  "פיתוחים בתהליך",
 ];
+
+export const SUGGESTION_STATUS_LABELS: Record<SuggestionStatus, string> = {
+  NEW: "התקבלה",
+  PLANNED: "בתכנון",
+  DONE: "בוצעה",
+  DECLINED: "לא תבוצע",
+};
+
+export const SUGGESTION_STATUS_TONES: Record<SuggestionStatus, BadgeTone> = {
+  NEW: "blue",
+  PLANNED: "amber",
+  DONE: "green",
+  DECLINED: "slate",
+};
+
+export const DEVELOPMENT_STATUS_LABELS: Record<DevelopmentStatus, string> = {
+  IDEA: "רעיון",
+  IN_PROGRESS: "בפיתוח",
+  TESTING: "בניסוי",
+  DONE: "הושלם",
+  ON_HOLD: "מוקפא",
+};
+
+export const DEVELOPMENT_STATUS_TONES: Record<DevelopmentStatus, BadgeTone> = {
+  IDEA: "slate",
+  IN_PROGRESS: "blue",
+  TESTING: "amber",
+  DONE: "green",
+  ON_HOLD: "slate",
+};
 
 export const FAULT_SEVERITY_LABELS: Record<FaultSeverity, string> = {
   LOW: "נמוכה",

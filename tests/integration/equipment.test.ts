@@ -62,7 +62,8 @@ describe("equipment service", () => {
     const { org, user } = await createOrgWithAdmin(db);
     await createEquipment(db, { organizationId: org.id, userId: user.id }, { name: "Saw", category: "נגרות" });
     const categories = await listEquipmentCategories(db, org.id);
-    expect(categories).toEqual(expect.arrayContaining(["כללי", "פיתוחים בתהליך", "נגרות"]));
+    expect(categories).toEqual(expect.arrayContaining(["כללי", "נגרות"]));
+    expect(categories).not.toContain("פיתוחים בתהליך");
     expect(categories.at(-1)).toBe("נגרות");
   });
 
