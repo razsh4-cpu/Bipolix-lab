@@ -5,6 +5,8 @@ import { Badge, Card, DetailList, EmptyState, LinkButton, ListSkeleton } from "@
 import { db } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/forms";
 import {
+  EQUIPMENT_PROCUREMENT_LABELS,
+  EQUIPMENT_PROCUREMENT_TONES,
   EQUIPMENT_STATUS_LABELS,
   EQUIPMENT_STATUS_TONES,
   FAULT_SEVERITY_LABELS,
@@ -47,6 +49,9 @@ async function EquipmentDetail({ params }: { params: PageProps<"/equipment/[id]"
           <h1 className="mt-1 text-2xl font-bold">{e.name}</h1>
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge tone={EQUIPMENT_STATUS_TONES[e.status]}>{EQUIPMENT_STATUS_LABELS[e.status]}</Badge>
+            {e.procurement !== "IN_SERVICE" && (
+              <Badge tone={EQUIPMENT_PROCUREMENT_TONES[e.procurement]}>{EQUIPMENT_PROCUREMENT_LABELS[e.procurement]}</Badge>
+            )}
             {hasOpenCritical && <Badge tone="red">תקלה קריטית פתוחה — לא זמין עד בדיקה</Badge>}
           </div>
         </div>
@@ -66,6 +71,7 @@ async function EquipmentDetail({ params }: { params: PageProps<"/equipment/[id]"
             <DetailList
               items={[
                 { label: "קטגוריה", value: e.category },
+                { label: "מצב רכש", value: EQUIPMENT_PROCUREMENT_LABELS[e.procurement] },
                 { label: "מעבדה", value: e.lab?.name },
                 { label: "מיקום", value: e.location },
                 { label: "יצרן", value: e.manufacturer },

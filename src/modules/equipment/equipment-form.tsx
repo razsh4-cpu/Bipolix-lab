@@ -4,10 +4,12 @@ import { useActionState } from "react";
 import { FormMessage, SelectField, TextAreaField, TextField } from "@/components/form-fields";
 import { BUTTON_PRIMARY } from "@/components/ui";
 import { initialActionState, toDateInput, type ActionState } from "@/lib/forms";
+import { EQUIPMENT_PROCUREMENT_LABELS, options } from "@/lib/labels";
 
 type Equipment = {
   name: string;
   category: string;
+  procurement: string;
   labId: string | null;
   manufacturer: string | null;
   model: string | null;
@@ -48,7 +50,7 @@ export function EquipmentForm({
             required
             defaultValue={v(equipment?.category)}
             list="category-options"
-            hint="למשל: CNC, חיתוך לייזר, מדפסת תלת-ממד"
+            hint="בחירה מהרשימה או הקלדת קטגוריה חדשה"
           />
           <datalist id="category-options">
             {categories.map((c) => (
@@ -56,6 +58,15 @@ export function EquipmentForm({
             ))}
           </datalist>
         </div>
+        <SelectField
+          name="procurement"
+          label="מצב רכש"
+          state={state}
+          required
+          defaultValue={equipment?.procurement ?? "IN_SERVICE"}
+          options={options(EQUIPMENT_PROCUREMENT_LABELS)}
+          hint="ציוד בהזמנה או נדרש לרכישה לא מופיע בלוח המכונות עד שיסומן כקיים"
+        />
         {labs.length > 0 && (
           <SelectField
             name="labId"

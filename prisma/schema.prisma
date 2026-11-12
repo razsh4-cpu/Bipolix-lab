@@ -37,6 +37,7 @@ model User {
   documents          EquipmentDocument[]
   auditLogs          AuditLog[]
   bridgeTokens       BridgeToken[]
+  invitations        Invitation[]
 
   @@map("user")
 }
@@ -126,6 +127,7 @@ model Organization {
   auditLogs               AuditLog[]
   printerLinks            PrinterLink[]
   bridgeTokens            BridgeToken[]
+  invitations             Invitation[]
   inventoryItemEquipments InventoryItemEquipment[]
   activities              Activity[]
 }
@@ -164,10 +166,16 @@ model Membership {
 
 enum EquipmentStatus {
   OPERATIONAL
-  IN_USE
-  LIMITED_OPERATION
   UNDER_MAINTENANCE
   OUT_OF_SERVICE
+}
+
+// Where the item stands in the purchasing cycle: in the lab, ordered and
+// awaiting delivery, or needed and not ordered yet.
+enum EquipmentProcurement {
+  IN_SERVICE
+  ON_ORDER
+  TO_ORDER
 }
 
 model Equipment {
@@ -181,6 +189,7 @@ model Equipment {
   serialNumber       String?
   location           String?
   status             EquipmentStatus @default(OPERATIONAL)
+  procurement        EquipmentProcurement @default(IN_SERVICE)
   purchaseDate       DateTime?       @db.Date
   warrantyExpiresAt  DateTime?       @db.Date
   notes              String?
@@ -202,6 +211,7 @@ model Equipment {
 
   @@index([organizationId, status])
   @@index([organizationId, name])
+  @@index([organizationId, procurement])
 }
 
 enum DocumentKind {
@@ -626,4 +636,26 @@ model Activity {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
 
   @@index([organizationId, date])
+}
+
+// ───────────────────────── Invitations ─────────────────────────
+
+// A one-time link an admin sends to a new staff member. Only the SHA-256 hash
+// of the token is stored; the person sets their own name and password.
+model Invitation {
+  id             String     @id @default(cuid())
+  organizationId String
+  email          String
+  role           MemberRole
+  tokenHash      String     @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  revokedAt      DateTime?
+  createdById    String
+  createdAt      DateTime   @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, email])
 }

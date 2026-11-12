@@ -1,11 +1,13 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 
 export function LoginForm() {
   const router = useRouter();
+  const params = useSearchParams();
+  const invited = params.get("invited") === "1";
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -33,6 +35,11 @@ export function LoginForm() {
 
   return (
     <form onSubmit={onSubmit} className="mt-6 space-y-4" noValidate>
+      {invited && (
+        <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          החשבון נוצר. אפשר להתחבר עם הסיסמה שבחרת.
+        </p>
+      )}
       <div>
         <label htmlFor="email" className="block text-sm font-medium">
           אימייל
@@ -43,6 +50,7 @@ export function LoginForm() {
           type="email"
           dir="ltr"
           autoComplete="email"
+          defaultValue={params.get("email") ?? undefined}
           required
           className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-left focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200"
         />

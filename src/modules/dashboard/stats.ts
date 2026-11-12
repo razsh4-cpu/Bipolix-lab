@@ -17,7 +17,7 @@ export type LowStockItem = {
 export async function getDashboardStats(db: PrismaClient, organizationId: string, now = new Date()) {
   const today = startOfToday(now);
   const org = { organizationId };
-  const activeEquipment = { ...org, archivedAt: null };
+  const activeEquipment = { ...org, archivedAt: null, procurement: "IN_SERVICE" as const };
   const openFault = { status: { in: [...OPEN_FAULT_STATUSES] } };
 
   const [
@@ -44,9 +44,8 @@ export async function getDashboardStats(db: PrismaClient, organizationId: string
     db.equipment.count({
       where: {
         ...activeEquipment,
-        status: { in: ["OPERATIONAL", "LIMITED_OPERATION"] },
+        status: "OPERATIONAL",
         OR: [
-          { status: "LIMITED_OPERATION" },
           { faultReports: { some: openFault } },
           { plans: { some: { isActive: true, nextDueAt: { lt: today } } } },
         ],

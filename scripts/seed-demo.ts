@@ -47,7 +47,7 @@ async function main() {
     db.equipment.create({ data: { ...o, labId: lab.id, name: "[Demo] מכונת CNC", category: "CNC" } }),
     db.equipment.create({ data: { ...o, labId: lab.id, name: "[Demo] חותך לייזר", category: "Laser", status: "OUT_OF_SERVICE" } }),
     db.equipment.create({ data: { ...o, labId: lab.id, name: "[Demo] חותך ויניל", category: "Vinyl cutter" } }),
-    db.equipment.create({ data: { ...o, labId: lab.id, name: "[Demo] מדפסת תלת-ממד", category: "3D printer", status: "LIMITED_OPERATION" } }),
+    db.equipment.create({ data: { ...o, labId: lab.id, name: "[Demo] מדפסת תלת-ממד", category: "3D printer", status: "UNDER_MAINTENANCE" } }),
   ]);
 
   await db.faultReport.create({

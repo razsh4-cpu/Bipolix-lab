@@ -24,7 +24,8 @@ describe("getDashboardStats", () => {
     const ok = await db.equipment.create({ data: { ...o, name: "A", category: "CNC" } });
     const overduePlan = await db.equipment.create({ data: { ...o, name: "B", category: "CNC" } });
     const down = await db.equipment.create({ data: { ...o, name: "C", category: "Laser", status: "OUT_OF_SERVICE" } });
-    await db.equipment.create({ data: { ...o, name: "D", category: "3D", status: "LIMITED_OPERATION" } });
+    // Ordered equipment is not in the lab yet, so it is left out of every count.
+    await db.equipment.create({ data: { ...o, name: "D", category: "3D", procurement: "ON_ORDER", status: "OUT_OF_SERVICE" } });
     await db.equipment.create({ data: { ...o, name: "Archived", category: "X", archivedAt: NOW } });
 
     await db.faultReport.create({ data: { ...o, equipmentId: down.id, description: "x", severity: "CRITICAL", reportedById: user.id } });
@@ -46,11 +47,11 @@ describe("getDashboardStats", () => {
     });
 
     const stats = await getDashboardStats(db, org.id, NOW);
-    expect(stats.equipment.total).toBe(4);
+    expect(stats.equipment.total).toBe(3);
     expect(stats.equipment.operational).toBe(2);
     expect(stats.equipment.down).toBe(1);
-    // B (overdue plan) + D (limited); C is already counted as down.
-    expect(stats.equipment.needsAttention).toBe(2);
+    // B (overdue plan); C is already counted as down.
+    expect(stats.equipment.needsAttention).toBe(1);
     expect(stats.equipment.critical.map((e) => e.name)).toEqual(["C"]);
     expect(stats.inventory.total).toBe(3);
     expect(stats.inventory.lowStock.map((i) => i.name)).toEqual(["Low"]);
