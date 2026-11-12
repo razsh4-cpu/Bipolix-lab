@@ -46,21 +46,15 @@ export const QuickMovementInput = z.object({
 
 export const INVENTORY_UNIT_SUGGESTIONS = ["יח'", "גליל", "גרם", "ק״ג", "מטר", "לוח", "ליטר", "חבילה"];
 
-export const INVENTORY_CATEGORY_SUGGESTIONS = [
-  "עץ",
-  "אקריליק",
-  "ויניל",
-  "פילמנט",
-  "כלי חיתוך",
-  "חלקי חילוף",
-  "נחירים",
-  "להבים",
-  "אלקטרוניקה",
-  "מתכלים",
-  "אחר",
-];
+// Offered in the category field; any other category can still be typed.
+export const INVENTORY_CATEGORY_SUGGESTIONS = ["גלילי פילמנט"];
 
 // Printing filament categories, where a colour is asked for.
 export function isFilamentCategory(category: string) {
   return /פילמנט|filament/i.test(category);
+}
+
+// The add form no longer asks for a unit: filament is counted in spools, everything else in units.
+export function defaultUnitFor(category: string) {
+  return isFilamentCategory(category) ? "גליל" : "יח'";
 }
