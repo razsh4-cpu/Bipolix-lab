@@ -52,7 +52,6 @@ export const DEFAULT_EQUIPMENT_CATEGORIES = [
   "לייזר",
   "מדפסת תלת-ממד",
   "כללי",
-  "פיתוחים בתהליך",
 ];
 
 export const SUGGESTION_STATUS_LABELS: Record<SuggestionStatus, string> = {
