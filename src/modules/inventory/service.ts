@@ -100,7 +100,7 @@ export function updateInventoryItem(db: PrismaClient, actor: Actor, id: string, 
     await assertLabInOrg(tx, actor.organizationId, input.labId);
     const item = await tx.inventoryItem.update({
       where: { id },
-      data: { labId: null, minStockLevel: null, storageLocation: null, supplier: null, unitCost: null, notes: null, quickStep: "1", ...input },
+      data: { labId: null, color: null, minStockLevel: null, storageLocation: null, supplier: null, unitCost: null, notes: null, quickStep: "1", ...input },
     });
     await setMachines(tx, actor.organizationId, id, equipmentIds);
     await writeAudit(tx, {

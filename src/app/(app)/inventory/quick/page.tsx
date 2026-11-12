@@ -50,6 +50,7 @@ async function QuickEntry({ searchParams }: { searchParams: PageProps<"/inventor
                 key={i.id}
                 id={i.id}
                 name={i.name}
+                color={i.color}
                 quantity={i.quantity.toString()}
                 unit={i.unit}
                 step={i.quickStep.toString()}

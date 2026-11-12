@@ -4,10 +4,12 @@ import { useActionState } from "react";
 import { FormMessage, SelectField, TextAreaField, TextField } from "@/components/form-fields";
 import { BUTTON_PRIMARY } from "@/components/ui";
 import { initialActionState, type ActionState } from "@/lib/forms";
+import { ColorField } from "./color-field";
 
 type Item = {
   name: string;
   category: string;
+  color: string | null;
   unit: string;
   labId: string | null;
   minStockLevel: string | null;
@@ -58,6 +60,7 @@ export function InventoryItemForm({
             ))}
           </datalist>
         </div>
+        <ColorField state={state} defaultValue={item?.color} />
         <div>
           <TextField name="unit" label="יחידת מידה" state={state} required list="inventory-units" defaultValue={v(item?.unit)} hint="למשל: יח', גליל, גרם, לוח" />
           <datalist id="inventory-units">

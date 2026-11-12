@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { COLOR_PATTERN } from "@/lib/colors";
 import { optionalText, requiredText } from "@/lib/forms";
 
 // Quantities travel as strings to keep exact decimal precision (up to 3 places).
@@ -11,6 +12,7 @@ const positiveQuantity = quantityString.refine((s) => Number(s) > 0, "הכמות
 export const InventoryItemInput = z.object({
   name: requiredText(120),
   category: requiredText(80),
+  color: z.string().toLowerCase().regex(COLOR_PATTERN, "צבע לא תקין").optional(),
   unit: requiredText(20),
   labId: z.string().optional(),
   minStockLevel: quantityString.optional(),

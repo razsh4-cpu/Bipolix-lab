@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { ColorSwatch } from "@/components/color-swatch";
+import { QuickEntryFab } from "@/components/quick-entry-fab";
 import { startOfToday } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/forms";
@@ -12,9 +14,9 @@ import { getDashboardStats } from "@/modules/dashboard/stats";
 
 export const metadata = { title: "דשבורד — LabOps" };
 
-function Panel({ title, href, className = "", children, aside }: { title: string; href?: string; className?: string; children: React.ReactNode; aside?: React.ReactNode }) {
+function Panel({ id, title, href, className = "", children, aside }: { id?: string; title: string; href?: string; className?: string; children: React.ReactNode; aside?: React.ReactNode }) {
   return (
-    <section className={`rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${className}`}>
+    <section id={id} className={`scroll-mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${className}`}>
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-lg font-semibold">
           {href ? <Link href={href} className="hover:text-blue-800 hover:underline">{title}</Link> : title}
@@ -129,15 +131,29 @@ const CONDITION_STYLE: Record<Condition, { label: string; card: string; badge: s
   down: { label: "לא זמינה", card: "border-red-300 bg-red-50/40", badge: "bg-red-100 text-red-800" },
 };
 
+const SPECIFIC_STATUS: MachineBoardRow["status"][] = ["OUT_OF_SERVICE", "UNDER_MAINTENANCE"];
+
 function MachineCard({ m, today }: { m: MachineBoardRow; today: Date }) {
   const style = CONDITION_STYLE[m.condition];
+  // The badge names the recorded status when it says more than the condition does.
+  const badge = SPECIFIC_STATUS.includes(m.status) ? EQUIPMENT_STATUS_LABELS[m.status] : style.label;
   return (
     <li className={`rounded-xl border bg-white p-3 ${style.card}`}>
       <Link href={`/equipment/${m.id}`} className="flex items-start justify-between gap-2">
         <span className="font-semibold hover:underline">{m.name}</span>
-        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`}>{style.label}</span>
+        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`}>{badge}</span>
       </Link>
-      {m.status !== "OPERATIONAL" && <p className="mt-1 text-sm text-slate-700">סטטוס: {EQUIPMENT_STATUS_LABELS[m.status]}</p>}
+      {m.loaded.length > 0 && (
+        <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-700" aria-label="טעון עכשיו">
+          {m.loaded.map((l) => (
+            <li key={l.id} className="flex items-center gap-1.5">
+              <ColorSwatch color={l.item.color} />
+              <Link href={`/inventory/${l.item.id}`} className="hover:underline">{l.item.name}</Link>
+              {l.slot && <span className="text-xs text-slate-500" dir="ltr">{l.slot}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
       {m.faultReports.length > 0 && (
         <ul className="mt-2 space-y-2">
           {m.faultReports.map((f) => {
@@ -206,39 +222,77 @@ function MachineBoard({ machines }: { machines: MachineBoardRow[] }) {
 const MATERIAL_DOT: Record<MaterialRow["state"], string> = { out: "bg-red-600", low: "bg-amber-500", ok: "bg-emerald-500" };
 const MATERIAL_TEXT: Record<MaterialRow["state"], string> = { out: "text-red-700 font-semibold", low: "text-amber-800 font-semibold", ok: "text-slate-700" };
 
+function MaterialLine({ r, showCategory }: { r: MaterialRow; showCategory?: boolean }) {
+  return (
+    <li>
+      <Link href={`/inventory/${r.id}`} className="flex items-start justify-between gap-2 rounded-lg px-1 py-1 hover:bg-slate-50">
+        <span className="flex min-w-0 items-start gap-2">
+          <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${MATERIAL_DOT[r.state]}`} aria-hidden />
+          <span className="sr-only">{MATERIAL_STATE_LABEL[r.state]}: </span>
+          <span className="min-w-0">
+            <span className="flex items-center gap-1.5">
+              <ColorSwatch color={r.color} />
+              {r.name}
+              {showCategory && <span className="text-xs text-slate-500">· {r.category}</span>}
+            </span>
+            {r.loadedIn.length > 0 && <span className="block text-xs text-blue-800">טעון ב: {r.loadedIn.join(", ")}</span>}
+          </span>
+        </span>
+        <span className={`shrink-0 tabular-nums ${MATERIAL_TEXT[r.state]}`}>{Number(r.quantity)} {r.unit}</span>
+      </Link>
+    </li>
+  );
+}
+
+const MATERIAL_STATE_LABEL: Record<MaterialRow["state"], string> = { out: "נגמר", low: "נמוך", ok: "במלאי" };
+
 function Materials({ groups, canEdit }: { groups: Map<string, MaterialRow[]>; canEdit: boolean }) {
+  const all = [...groups.values()].flat();
+  const needs = all.filter((r) => r.state !== "ok").sort((a, b) => (a.state === b.state ? 0 : a.state === "out" ? -1 : 1));
+  const okGroups = [...groups.entries()]
+    .map(([category, rows]) => [category, rows.filter((r) => r.state === "ok")] as const)
+    .filter(([, rows]) => rows.length > 0);
+  const okCount = all.length - needs.length;
   return (
     <Panel
+      id="materials"
       title="כוננות חומרים ומלאי"
       href="/inventory"
       className="lg:col-span-2"
       aside={canEdit && <Link href="/inventory/quick" className="text-sm text-blue-700 underline">הזנה מהירה</Link>}
     >
-      {groups.size === 0 ? (
+      {all.length === 0 ? (
         <p className="text-slate-600">עדיין לא הוזנו חומרים ופריטי מלאי.</p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {[...groups.entries()].map(([category, rows]) => (
-            <div key={category}>
-              <h3 className="mb-1 text-sm font-medium text-slate-600">{category}</h3>
-              <ul className="space-y-1">
-                {rows.map((r) => (
-                  <li key={r.id}>
-                    <Link href={`/inventory/${r.id}`} className="flex items-center justify-between gap-2 rounded-lg px-1 py-0.5 hover:bg-slate-50">
-                      <span className="flex items-center gap-2">
-                        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${MATERIAL_DOT[r.state]}`} aria-hidden />
-                        {r.name}
-                      </span>
-                      <span className={`tabular-nums ${MATERIAL_TEXT[r.state]}`}>{Number(r.quantity)} {r.unit}</span>
-                    </Link>
-                  </li>
+        <>
+          <h3 className="mb-1 text-sm font-medium text-slate-600">דורש השלמה</h3>
+          {needs.length === 0 ? (
+            <p className="px-1 text-emerald-800">כל החומרים מעל סף המינימום.</p>
+          ) : (
+            <ul className="grid gap-x-6 gap-y-0.5 sm:grid-cols-2">
+              {needs.map((r) => <MaterialLine key={r.id} r={r} showCategory />)}
+            </ul>
+          )}
+          {okCount > 0 && (
+            <details className="mt-3 rounded-xl bg-slate-50 px-3 py-2">
+              <summary className="cursor-pointer text-sm font-medium text-blue-700">
+                {needs.length === 0 ? `הצגת כל החומרים (${okCount})` : `עוד ${okCount} חומרים במלאי תקין`}
+              </summary>
+              <div className="mt-2 grid gap-4 sm:grid-cols-2">
+                {okGroups.map(([category, rows]) => (
+                  <div key={category}>
+                    <h4 className="mb-1 text-sm font-medium text-slate-600">{category}</h4>
+                    <ul className="space-y-0.5">
+                      {rows.map((r) => <MaterialLine key={r.id} r={r} />)}
+                    </ul>
+                  </div>
                 ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+              </div>
+            </details>
+          )}
+        </>
       )}
-      <p className="mt-3 text-xs text-slate-500">ירוק: יש מספיק · כתום: מתחת לסף המינימום · אדום: נגמר. הגלילים שטעונים בתוך המדפסות יוצגו כאן אחרי החיבור למדפסות.</p>
+      <p className="mt-3 text-xs text-slate-500">אדום: נגמר · כתום: מתחת לסף המינימום · ירוק: יש מספיק. מה שטעון בכל מכונה מסומן בדף המכונה.</p>
     </Panel>
   );
 }
@@ -288,6 +342,7 @@ async function DashboardContent() {
         <Materials groups={overview.materials} canEdit={can(role, "inventory.issue")} />
         <Summary stats={stats} />
       </div>
+      {can(role, "inventory.issue") && <QuickEntryFab />}
     </>
   );
 }

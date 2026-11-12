@@ -40,6 +40,7 @@ model User {
   invitations        Invitation[]
   suggestions        Suggestion[]
   developments       Development[]
+  loadedMaterials    LoadedMaterial[]
 
   @@map("user")
 }
@@ -134,6 +135,7 @@ model Organization {
   developments            Development[]
   inventoryItemEquipments InventoryItemEquipment[]
   activities              Activity[]
+  loadedMaterials         LoadedMaterial[]
 }
 
 model Lab {
@@ -183,7 +185,7 @@ enum EquipmentProcurement {
 }
 
 model Equipment {
-  id                 String          @id @default(cuid())
+  id                 String               @id @default(cuid())
   organizationId     String
   labId              String?
   name               String
@@ -192,15 +194,15 @@ model Equipment {
   model              String?
   serialNumber       String?
   location           String?
-  status             EquipmentStatus @default(OPERATIONAL)
+  status             EquipmentStatus      @default(OPERATIONAL)
   procurement        EquipmentProcurement @default(IN_SERVICE)
-  purchaseDate       DateTime?       @db.Date
-  warrantyExpiresAt  DateTime?       @db.Date
+  purchaseDate       DateTime?            @db.Date
+  warrantyExpiresAt  DateTime?            @db.Date
   notes              String?
   safetyInstructions String?
   archivedAt         DateTime?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 
   organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   lab            Lab?                     @relation(fields: [labId], references: [id], onDelete: SetNull)
@@ -212,6 +214,7 @@ model Equipment {
   printerLink    PrinterLink?
   procedures     Procedure[]
   inventoryItems InventoryItemEquipment[]
+  loaded         LoadedMaterial[]
 
   @@index([organizationId, status])
   @@index([organizationId, name])
@@ -365,6 +368,8 @@ model InventoryItem {
   labId           String?
   name            String
   category        String
+  // Display colour as #RRGGBB (filament, vinyl, acrylic). Null = no colour.
+  color           String?
   quantity        Decimal   @default(0) @db.Decimal(12, 3)
   unit            String
   minStockLevel   Decimal?  @db.Decimal(12, 3)
@@ -382,6 +387,7 @@ model InventoryItem {
   lab          Lab?                     @relation(fields: [labId], references: [id], onDelete: SetNull)
   transactions InventoryTransaction[]
   machines     InventoryItemEquipment[]
+  loadedIn     LoadedMaterial[]
 
   @@index([organizationId, name])
 }
@@ -662,6 +668,29 @@ model Invitation {
   createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
   @@index([organizationId, email])
+}
+
+// Material currently loaded in a machine (spool in an AMS slot, vinyl roll in
+// the Cricut, board on the laser bed). Entered by hand until the printer bridge
+// reports it. A machine slot holds at most one material.
+model LoadedMaterial {
+  id             String   @id @default(cuid())
+  organizationId String
+  equipmentId    String
+  itemId         String
+  // Free label such as "AMS 1 · 2" or "חיצוני". Empty = the machine as a whole.
+  slot           String   @default("")
+  loadedAt       DateTime @default(now())
+  loadedById     String
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  equipment    Equipment     @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  item         InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  loadedBy     User          @relation(fields: [loadedById], references: [id], onDelete: Restrict)
+
+  @@unique([equipmentId, slot])
+  @@index([organizationId])
+  @@index([itemId])
 }
 
 // ───────────────────────── Improvement suggestions ─────────────────────────
