@@ -2,7 +2,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { ActivityInput } from "@/modules/activities/schema";
 import { createActivity, getTruckSchedule, updateActivity } from "@/modules/activities/service";
 import { getOverview } from "@/modules/dashboard/overview";
-import { changeEquipmentStatus, createEquipment } from "@/modules/equipment/service";
+import { createEquipment } from "@/modules/equipment/service";
 import { createInventoryItem } from "@/modules/inventory/service";
 import { reportFault, updateFault } from "@/modules/maintenance/service";
 import { createOrgWithAdmin, testDb } from "../helpers";
@@ -46,8 +46,8 @@ describe("dashboard overview", () => {
   it("collects alerts from faults, materials and unconfirmed activities, most urgent first", async () => {
     const { org, actor } = await setup();
     const laser = await createEquipment(db, actor, { name: "Laser", category: "Laser" });
-    const printer = await createEquipment(db, actor, { name: "X2D 1", category: "3D" });
-    await changeEquipmentStatus(db, actor, printer.id, { status: "IN_USE" });
+    await createEquipment(db, actor, { name: "X2D 1", category: "3D" });
+    await createEquipment(db, actor, { name: "Router (ordered)", category: "CNC", procurement: "ON_ORDER" });
     const f = await reportFault(db, actor, { equipmentId: laser.id, severity: "HIGH", description: "mirror" });
     await createInventoryItem(db, actor, { name: "PLA black", category: "פילמנט", unit: "גליל", initialQuantity: "1", minStockLevel: "2" });
     await createInventoryItem(db, actor, { name: "Acrylic 3mm", category: "אקריליק", unit: "לוח" });
@@ -60,7 +60,7 @@ describe("dashboard overview", () => {
       ["warning", "מלאי נמוך: PLA black (1 גליל)"],
       ["info", "לעדכן אם הפעילות בוצעה: Old workshop (02.11.2026)"],
     ]);
-    expect(o.machines.map((m) => [m.name, m.condition])).toEqual([["Laser", "attention"], ["X2D 1", "busy"]]);
+    expect(o.machines.map((m) => [m.name, m.condition])).toEqual([["Laser", "attention"], ["X2D 1", "ok"]]);
     expect([...o.materials.keys()]).toEqual(["אקריליק", "פילמנט"]);
 
     await updateFault(db, actor, f.id, { status: "IN_PROGRESS", handledBy: "Raz", expectedFixAt: day("2026-11-04") });

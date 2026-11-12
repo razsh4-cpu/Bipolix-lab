@@ -124,8 +124,7 @@ function Truck({ schedule, canEdit }: { schedule: Schedule; canEdit: boolean }) 
 }
 
 const CONDITION_STYLE: Record<Condition, { label: string; card: string; badge: string }> = {
-  ok: { label: "תקינה ופנויה", card: "border-emerald-200", badge: "bg-emerald-100 text-emerald-800" },
-  busy: { label: "בשימוש", card: "border-blue-200", badge: "bg-blue-100 text-blue-800" },
+  ok: { label: "תקינה", card: "border-emerald-200", badge: "bg-emerald-100 text-emerald-800" },
   attention: { label: "דורשת תשומת לב", card: "border-amber-300", badge: "bg-amber-100 text-amber-900" },
   down: { label: "לא זמינה", card: "border-red-300 bg-red-50/40", badge: "bg-red-100 text-red-800" },
 };
@@ -185,8 +184,7 @@ function MachineBoard({ machines }: { machines: MachineBoardRow[] }) {
   const today = startOfToday(new Date());
   const count = (c: Condition) => machines.filter((m) => m.condition === c).length;
   const summary = [
-    `${count("ok")} פנויות`,
-    count("busy") > 0 && `${count("busy")} בשימוש`,
+    `${count("ok")} תקינות`,
     count("attention") > 0 && `${count("attention")} לתשומת לב`,
     count("down") > 0 && `${count("down")} לא זמינות`,
   ].filter(Boolean).join(" · ");

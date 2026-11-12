@@ -1,11 +1,12 @@
 import { z } from "zod";
-import { EquipmentStatus } from "@/generated/prisma/enums";
+import { EquipmentProcurement, EquipmentStatus } from "@/generated/prisma/enums";
 import { optionalDate, optionalText, requiredText } from "@/lib/forms";
 
 export const EquipmentInput = z.object({
   name: requiredText(120),
   category: requiredText(80),
   labId: z.string().optional(),
+  procurement: z.enum(EquipmentProcurement, { error: "יש לבחור מצב רכש" }).optional(),
   manufacturer: optionalText(120),
   model: optionalText(120),
   serialNumber: optionalText(120),

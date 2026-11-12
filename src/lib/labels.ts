@@ -2,6 +2,7 @@ import type { BadgeTone } from "@/components/ui";
 import type {
   ActivityStatus,
   ProcedureKind,
+  EquipmentProcurement,
   EquipmentStatus,
   FaultSeverity,
   FaultStatus,
@@ -21,19 +22,37 @@ export const ROLE_LABELS: Record<MemberRole, string> = {
 
 export const EQUIPMENT_STATUS_LABELS: Record<EquipmentStatus, string> = {
   OPERATIONAL: "תקין",
-  IN_USE: "בשימוש",
-  LIMITED_OPERATION: "פעילות מוגבלת",
   UNDER_MAINTENANCE: "בטיפול",
   OUT_OF_SERVICE: "מושבת",
 };
 
 export const EQUIPMENT_STATUS_TONES: Record<EquipmentStatus, BadgeTone> = {
   OPERATIONAL: "green",
-  IN_USE: "blue",
-  LIMITED_OPERATION: "amber",
   UNDER_MAINTENANCE: "orange",
   OUT_OF_SERVICE: "red",
 };
+
+export const EQUIPMENT_PROCUREMENT_LABELS: Record<EquipmentProcurement, string> = {
+  IN_SERVICE: "ציוד קיים",
+  ON_ORDER: "בהזמנה – ממתין לאספקה",
+  TO_ORDER: "נדרש לרכישה",
+};
+
+export const EQUIPMENT_PROCUREMENT_TONES: Record<EquipmentProcurement, BadgeTone> = {
+  IN_SERVICE: "green",
+  ON_ORDER: "blue",
+  TO_ORDER: "amber",
+};
+
+// Offered in the category picker even before any equipment uses them.
+export const DEFAULT_EQUIPMENT_CATEGORIES = [
+  "CNC",
+  "חותך ויניל",
+  "לייזר",
+  "מדפסת תלת-ממד",
+  "כללי",
+  "פיתוחים בתהליך",
+];
 
 export const FAULT_SEVERITY_LABELS: Record<FaultSeverity, string> = {
   LOW: "נמוכה",

@@ -3,12 +3,16 @@ import { Suspense } from "react";
 import { Badge, Card, EmptyState, LinkButton, ListSkeleton, PageHeader } from "@/components/ui";
 import { EquipmentStatus } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
-import { EQUIPMENT_STATUS_LABELS, EQUIPMENT_STATUS_TONES } from "@/lib/labels";
+import { EQUIPMENT_PROCUREMENT_LABELS, EQUIPMENT_STATUS_LABELS, EQUIPMENT_STATUS_TONES } from "@/lib/labels";
 import { can } from "@/lib/permissions";
 import { requirePermission } from "@/lib/session";
-import { listEquipment, listEquipmentCategories } from "@/modules/equipment/service";
+import type { EquipmentProcurement } from "@/generated/prisma/enums";
+import { listEquipment, listUsedEquipmentCategories } from "@/modules/equipment/service";
 
 export const metadata = { title: "ציוד — LabOps" };
+
+// Equipment in the lab first, then what is on its way, then what still needs buying.
+const PROCUREMENT_ORDER: EquipmentProcurement[] = ["IN_SERVICE", "ON_ORDER", "TO_ORDER"];
 
 const FILTER_INPUT = "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm";
 
@@ -21,7 +25,7 @@ async function EquipmentList({ searchParams }: { searchParams: PageProps<"/equip
 
   const [items, categories] = await Promise.all([
     listEquipment(db, ctx.organization.id, { q: q || undefined, status, category }),
-    listEquipmentCategories(db, ctx.organization.id),
+    listUsedEquipmentCategories(db, ctx.organization.id),
   ]);
   const filtered = Boolean(q || status || category);
 
@@ -59,26 +63,36 @@ async function EquipmentList({ searchParams }: { searchParams: PageProps<"/equip
           )}
         </EmptyState>
       ) : (
-        <Card>
-          <ul className="divide-y divide-slate-100">
-            {items.map((e) => (
-              <li key={e.id}>
-                <Link href={`/equipment/${e.id}`} className="flex flex-wrap items-center justify-between gap-2 px-1 py-3 hover:bg-slate-50">
-                  <div className="min-w-0">
-                    <div className="font-medium">{e.name}</div>
-                    <div className="text-sm text-slate-500">
-                      {[e.category, e.manufacturer, e.model, e.location].filter(Boolean).join(" · ")}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {e._count.faultReports > 0 && <Badge tone="amber">{e._count.faultReports} תקלות פתוחות</Badge>}
-                    <Badge tone={EQUIPMENT_STATUS_TONES[e.status]}>{EQUIPMENT_STATUS_LABELS[e.status]}</Badge>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Card>
+        <div className="space-y-4">
+          {PROCUREMENT_ORDER.map((stage) => {
+            const group = items.filter((e) => e.procurement === stage);
+            if (group.length === 0) return null;
+            return (
+              <Card key={stage} title={`${EQUIPMENT_PROCUREMENT_LABELS[stage]} (${group.length})`}>
+                <ul className="divide-y divide-slate-100">
+                  {group.map((e) => (
+                    <li key={e.id}>
+                      <Link href={`/equipment/${e.id}`} className="flex flex-wrap items-center justify-between gap-2 px-1 py-3 hover:bg-slate-50">
+                        <div className="min-w-0">
+                          <div className="font-medium">{e.name}</div>
+                          <div className="text-sm text-slate-500">
+                            {[e.category, e.manufacturer, e.model, e.location].filter(Boolean).join(" · ")}
+                          </div>
+                        </div>
+                        {stage === "IN_SERVICE" && (
+                          <div className="flex items-center gap-2">
+                            {e._count.faultReports > 0 && <Badge tone="amber">{e._count.faultReports} תקלות פתוחות</Badge>}
+                            <Badge tone={EQUIPMENT_STATUS_TONES[e.status]}>{EQUIPMENT_STATUS_LABELS[e.status]}</Badge>
+                          </div>
+                        )}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            );
+          })}
+        </div>
       )}
     </>
   );

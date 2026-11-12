@@ -3,7 +3,7 @@ import type { EquipmentStatus, FaultSeverity, FaultStatus } from "@/generated/pr
 import { startOfToday } from "@/lib/dates";
 import { OPEN_FAULT_STATUSES } from "@/modules/equipment/service";
 
-export type Condition = "ok" | "busy" | "attention" | "down";
+export type Condition = "ok" | "attention" | "down";
 
 type BoardFault = {
   id: string;
@@ -23,23 +23,23 @@ type BoardMachine = {
 const SEVERITY_RANK: Record<FaultSeverity, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
 
 // Machine is "down" when it is not usable at all, "attention" when usable but
-// something is open (fault, limited mode, overdue maintenance, low stock),
-// "busy" when it is fine but marked as in use.
+// something is open (fault, overdue maintenance, low stock).
 export function machineCondition(m: BoardMachine, today: Date): Condition {
   if (m.status === "OUT_OF_SERVICE" || m.status === "UNDER_MAINTENANCE") return "down";
   if (m.faultReports.some((f) => f.severity === "CRITICAL")) return "down";
-  if (m.status === "LIMITED_OPERATION" || m.faultReports.length > 0) return "attention";
+  if (m.faultReports.length > 0) return "attention";
   if (m.plans.some((p) => p.nextDueAt < today)) return "attention";
   if (m.lowStock && m.lowStock.length > 0) return "attention";
-  return m.status === "IN_USE" ? "busy" : "ok";
+  return "ok";
 }
 
-const CONDITION_ORDER: Record<Condition, number> = { down: 0, attention: 1, busy: 2, ok: 3 };
+const CONDITION_ORDER: Record<Condition, number> = { down: 0, attention: 1, ok: 2 };
 
 export async function getMachineBoard(db: PrismaClient, organizationId: string, now = new Date()) {
   const today = startOfToday(now);
   const machines = await db.equipment.findMany({
-    where: { organizationId, archivedAt: null },
+    // Ordered or still-to-buy equipment is not in the lab yet, so it is not on the board.
+    where: { organizationId, archivedAt: null, procurement: "IN_SERVICE" },
     orderBy: { name: "asc" },
     select: {
       id: true,

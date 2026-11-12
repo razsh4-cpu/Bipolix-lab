@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { EquipmentInput } from "@/modules/equipment/schema";
-import { changeEquipmentStatus, createEquipment, listEquipment, updateEquipment } from "@/modules/equipment/service";
+import { changeEquipmentStatus, createEquipment, listEquipment, listEquipmentCategories, updateEquipment } from "@/modules/equipment/service";
 import { createOrgWithAdmin, testDb } from "../helpers";
 
 const db = testDb();
@@ -56,5 +56,25 @@ describe("equipment service", () => {
     await createEquipment(db, actor, { name: "CNC", category: "CNC", location: "מדף אחורי" });
     expect((await listEquipment(db, org.id, { q: "bambu" })).map((e) => e.name)).toEqual(["מדפסת 1"]);
     expect((await listEquipment(db, org.id, { q: "אחורי" })).map((e) => e.name)).toEqual(["CNC"]);
+  });
+
+  it("offers the default categories first, then other categories in use", async () => {
+    const { org, user } = await createOrgWithAdmin(db);
+    await createEquipment(db, { organizationId: org.id, userId: user.id }, { name: "Saw", category: "נגרות" });
+    const categories = await listEquipmentCategories(db, org.id);
+    expect(categories).toEqual(expect.arrayContaining(["כללי", "פיתוחים בתהליך", "נגרות"]));
+    expect(categories.at(-1)).toBe("נגרות");
+  });
+
+  it("keeps the procurement stage, defaulting to equipment already in the lab", async () => {
+    const { org, user } = await createOrgWithAdmin(db);
+    const actor = { organizationId: org.id, userId: user.id };
+    const existing = await createEquipment(db, actor, { name: "A", category: "CNC" });
+    const ordered = await createEquipment(db, actor, { name: "B", category: "CNC", procurement: "ON_ORDER" });
+    expect(existing.procurement).toBe("IN_SERVICE");
+    expect(ordered.procurement).toBe("ON_ORDER");
+    await updateEquipment(db, actor, ordered.id, { name: "B", category: "CNC", procurement: "IN_SERVICE" });
+    expect((await listEquipment(db, org.id)).map((e) => [e.name, e.procurement])).toEqual([["A", "IN_SERVICE"], ["B", "IN_SERVICE"]]);
+    expect(EquipmentInput.safeParse({ name: "x", category: "y", procurement: "BOGUS" }).success).toBe(false);
   });
 });

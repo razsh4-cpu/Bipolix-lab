@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import type { EquipmentStatus } from "@/generated/prisma/enums";
 import { writeAudit } from "@/lib/audit";
+import { DEFAULT_EQUIPMENT_CATEGORIES } from "@/lib/labels";
 import { DomainError, type Actor } from "@/modules/types";
 import type { EquipmentInput, EquipmentStatusChange } from "./schema";
 
@@ -27,12 +28,20 @@ export function listEquipment(db: PrismaClient, organizationId: string, filters:
       model: true,
       location: true,
       status: true,
+      procurement: true,
       _count: { select: { faultReports: { where: { status: { in: [...OPEN_FAULT_STATUSES] } } } } },
     },
   });
 }
 
+// Suggested categories for the form: the defaults first, then any others in use.
 export async function listEquipmentCategories(db: PrismaClient, organizationId: string) {
+  const used = await listUsedEquipmentCategories(db, organizationId);
+  return [...DEFAULT_EQUIPMENT_CATEGORIES, ...used.filter((c) => !DEFAULT_EQUIPMENT_CATEGORIES.includes(c))];
+}
+
+// Categories that actually have equipment, for the list filter.
+export async function listUsedEquipmentCategories(db: PrismaClient, organizationId: string) {
   const rows = await db.equipment.findMany({
     where: { organizationId, archivedAt: null },
     distinct: ["category"],
