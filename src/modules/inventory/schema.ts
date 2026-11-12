@@ -59,3 +59,8 @@ export const INVENTORY_CATEGORY_SUGGESTIONS = [
   "מתכלים",
   "אחר",
 ];
+
+// Printing filament categories, where a colour is asked for.
+export function isFilamentCategory(category: string) {
+  return /פילמנט|filament/i.test(category);
+}

@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { FormMessage, SelectField, TextAreaField, TextField } from "@/components/form-fields";
 import { BUTTON_PRIMARY } from "@/components/ui";
 import { initialActionState, type ActionState } from "@/lib/forms";
 import { ColorField } from "./color-field";
+import { isFilamentCategory } from "./schema";
 
 type Item = {
   name: string;
@@ -42,13 +43,26 @@ export function InventoryItemForm({
 }) {
   const [state, formAction, pending] = useActionState(action, initialActionState);
   const v = (x: string | null | undefined) => x ?? undefined;
+  const submittedCategory = state.values?.category;
+  const [category, setCategory] = useState(typeof submittedCategory === "string" ? submittedCategory : (item?.category ?? ""));
+  // Colour matters for printing filament; other items keep the form short.
+  // An item that already has a colour keeps the picker so the colour is not dropped silently.
+  const showColor = isFilamentCategory(category) || Boolean(item?.color);
   const submitted = state.values?.equipmentIds;
   const checkedMachines = state.values
     ? (Array.isArray(submitted) ? submitted : submitted ? [submitted] : [])
     : (item?.equipmentIds ?? (defaultEquipmentId ? [defaultEquipmentId] : []));
 
   return (
-    <form action={formAction} className="space-y-6" noValidate>
+    <form
+      action={formAction}
+      className="space-y-6"
+      noValidate
+      onInput={(e) => {
+        const t = e.target as HTMLInputElement;
+        if (t.name === "category") setCategory(t.value);
+      }}
+    >
       <FormMessage state={state} />
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField name="name" label="שם הפריט" state={state} required defaultValue={v(item?.name)} />
@@ -60,7 +74,7 @@ export function InventoryItemForm({
             ))}
           </datalist>
         </div>
-        <ColorField state={state} defaultValue={item?.color} />
+        {showColor && <ColorField state={state} defaultValue={item?.color} />}
         <div>
           <TextField name="unit" label="יחידת מידה" state={state} required list="inventory-units" defaultValue={v(item?.unit)} hint="למשל: יח', גליל, גרם, לוח" />
           <datalist id="inventory-units">
