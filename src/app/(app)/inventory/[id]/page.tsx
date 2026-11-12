@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ColorSwatch } from "@/components/color-swatch";
+import { colorName } from "@/lib/colors";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Badge, Card, DetailList, EmptyState, LinkButton, ListSkeleton } from "@/components/ui";
@@ -33,7 +35,7 @@ async function ItemDetail({ params }: { params: PageProps<"/inventory/[id]">["pa
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <Link href="/inventory" className="text-sm text-blue-700 underline">חזרה למלאי</Link>
-          <h1 className="mt-1 text-2xl font-bold">{item.name}</h1>
+          <h1 className="mt-1 flex items-center gap-2 text-2xl font-bold"><ColorSwatch color={item.color} className="h-5 w-5" />{item.name}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span className="text-3xl font-bold tabular-nums">{Number(item.quantity)}</span>
             <span className="text-slate-600">{item.unit}</span>
@@ -49,6 +51,7 @@ async function ItemDetail({ params }: { params: PageProps<"/inventory/[id]">["pa
             <DetailList
               items={[
                 { label: "קטגוריה", value: item.category },
+                { label: "צבע", value: colorName(item.color) },
                 {
                   label: "משמש למכונות",
                   value:

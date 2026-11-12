@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ColorSwatch } from "@/components/color-swatch";
 import { Suspense } from "react";
 import { Badge, Card, EmptyState, LinkButton, ListSkeleton, PageHeader } from "@/components/ui";
 import { db } from "@/lib/db";
@@ -60,7 +61,7 @@ async function InventoryList({ searchParams }: { searchParams: PageProps<"/inven
               <li key={i.id}>
                 <Link href={`/inventory/${i.id}`} className="flex flex-wrap items-center justify-between gap-2 px-1 py-3 hover:bg-slate-50">
                   <div className="min-w-0">
-                    <div className="font-medium">{i.name}</div>
+                    <div className="flex items-center gap-2 font-medium"><ColorSwatch color={i.color} />{i.name}</div>
                     <div className="text-sm text-slate-500">
                       {[i.category, i.storageLocation, i.machines.map((m) => m.equipment.name).join(", ")].filter(Boolean).join(" · ")}
                     </div>

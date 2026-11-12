@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ColorSwatch } from "@/components/color-swatch";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Badge, Card, DetailList, EmptyState, LinkButton, ListSkeleton } from "@/components/ui";
@@ -24,6 +25,7 @@ import { changeEquipmentStatusAction } from "@/modules/equipment/actions";
 import { getEquipment, OPEN_FAULT_STATUSES } from "@/modules/equipment/service";
 import { EquipmentStatusForm } from "@/modules/equipment/status-form";
 import { listInventory } from "@/modules/inventory/service";
+import { LoadedMaterialsCard } from "@/modules/loaded/loaded-card";
 import { listProcedures } from "@/modules/procedures/service";
 
 async function EquipmentDetail({ params }: { params: PageProps<"/equipment/[id]">["params"] }) {
@@ -86,6 +88,8 @@ async function EquipmentDetail({ params }: { params: PageProps<"/equipment/[id]"
             />
           </Card>
 
+          <LoadedMaterialsCard organizationId={ctx.organization.id} equipmentId={e.id} canEdit={can(ctx.role, "inventory.issue")} />
+
           <Card title="הוראות בטיחות">
             {e.safetyInstructions ? (
               <p className="whitespace-pre-wrap">{e.safetyInstructions}</p>
@@ -132,7 +136,7 @@ async function EquipmentDetail({ params }: { params: PageProps<"/equipment/[id]"
                 {inventory.map((i) => (
                   <li key={i.id}>
                     <Link href={`/inventory/${i.id}`} className="flex items-center justify-between gap-2 py-2 hover:bg-slate-50">
-                      <span>{i.name}</span>
+                      <span className="flex items-center gap-2"><ColorSwatch color={i.color} />{i.name}</span>
                       <span className={`tabular-nums ${i.isLow ? "font-semibold text-amber-700" : ""}`}>
                         {Number(i.quantity)} {i.unit}{i.isLow && " · מתחת לסף"}
                       </span>
