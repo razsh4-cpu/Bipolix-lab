@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: "/maintenance", label: "תקלות ותחזוקה", ready: true },
   { href: "/tasks", label: "משימות", ready: true },
   { href: "/procedures", label: "נהלים", ready: true },
+  { href: "/suggestions", label: "הצעות לשיפור", ready: true },
 ] as const;
 
 async function CurrentUser() {

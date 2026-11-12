@@ -38,6 +38,7 @@ model User {
   auditLogs          AuditLog[]
   bridgeTokens       BridgeToken[]
   invitations        Invitation[]
+  suggestions        Suggestion[]
 
   @@map("user")
 }
@@ -128,6 +129,7 @@ model Organization {
   printerLinks            PrinterLink[]
   bridgeTokens            BridgeToken[]
   invitations             Invitation[]
+  suggestions             Suggestion[]
   inventoryItemEquipments InventoryItemEquipment[]
   activities              Activity[]
 }
@@ -658,4 +660,31 @@ model Invitation {
   createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
   @@index([organizationId, email])
+}
+
+// ───────────────────────── Improvement suggestions ─────────────────────────
+
+enum SuggestionStatus {
+  NEW
+  PLANNED
+  DONE
+  DECLINED
+}
+
+// Staff ideas for improving the system; the admin answers and tracks them.
+model Suggestion {
+  id             String           @id @default(cuid())
+  organizationId String
+  authorId       String
+  title          String
+  details        String?
+  status         SuggestionStatus @default(NEW)
+  adminResponse  String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  author       User         @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, status])
 }

@@ -19,10 +19,10 @@ describe("permissions matrix", () => {
     expect(can("INSTRUCTOR", "inventory.issue")).toBe(true);
   });
 
-  it("gives viewers no write permission at all", () => {
+  it("gives viewers no write permission except sending an improvement suggestion", () => {
     const writable = Object.keys(PERMISSIONS).filter(
       (p) => !p.endsWith(".view") && can("VIEWER", p as keyof typeof PERMISSIONS),
     );
-    expect(writable).toEqual([]);
+    expect(writable).toEqual(["suggestion.create"]);
   });
 });
