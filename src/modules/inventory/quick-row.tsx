@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { ColorSwatch } from "@/components/color-swatch";
 import { quickMovementAction } from "./actions";
 
 type Props = {
   id: string;
   name: string;
+  color?: string | null;
   quantity: string;
   unit: string;
   step: string;
@@ -16,7 +18,7 @@ type Props = {
 
 const TAP = "min-h-12 min-w-12 rounded-xl px-3 text-base font-semibold disabled:opacity-50";
 
-export function QuickRow({ id, name, quantity, unit, step, isLow, canReceive, canIssue }: Props) {
+export function QuickRow({ id, name, color, quantity, unit, step, isLow, canReceive, canIssue }: Props) {
   const [pending, start] = useTransition();
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -30,7 +32,7 @@ export function QuickRow({ id, name, quantity, unit, step, isLow, canReceive, ca
   return (
     <li className="flex flex-wrap items-center gap-3 py-3" aria-busy={pending}>
       <div className="min-w-0 flex-1">
-        <div className="font-medium">{name}</div>
+        <div className="flex items-center gap-2 font-medium"><ColorSwatch color={color} />{name}</div>
         <div className={`text-sm tabular-nums ${isLow ? "font-semibold text-amber-700" : "text-slate-600"}`}>
           {Number(quantity)} {unit}
           {isLow && " · מתחת למינימום"}

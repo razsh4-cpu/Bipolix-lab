@@ -56,6 +56,11 @@ export async function getMachineBoard(db: PrismaClient, organizationId: string, 
         orderBy: { nextDueAt: "asc" },
         select: { title: true, nextDueAt: true },
       },
+      loaded: {
+        where: { item: { archivedAt: null } },
+        orderBy: { slot: "asc" },
+        select: { id: true, slot: true, item: { select: { id: true, name: true, color: true } } },
+      },
       inventoryItems: {
         where: { item: { archivedAt: null, minStockLevel: { not: null } } },
         select: { item: { select: { id: true, name: true, unit: true, quantity: true, minStockLevel: true } } },

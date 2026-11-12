@@ -38,7 +38,14 @@ async function EditItem({ params }: { params: PageProps<"/inventory/[id]/edit">[
           units={INVENTORY_UNIT_SUGGESTIONS}
           equipment={equipment}
           item={{
-            ...item,
+            name: item.name,
+            category: item.category,
+            color: item.color,
+            unit: item.unit,
+            labId: item.labId,
+            storageLocation: item.storageLocation,
+            supplier: item.supplier,
+            notes: item.notes,
             minStockLevel: item.minStockLevel?.toString() ?? null,
             unitCost: item.unitCost?.toString() ?? null,
             quickStep: item.quickStep.toString(),
