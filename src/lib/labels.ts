@@ -10,6 +10,7 @@ import type {
   MaintenanceType,
   MemberRole,
   PlanSource,
+  DevelopmentStatus,
   SuggestionStatus,
   TaskPriority,
   TaskStatus,
@@ -66,6 +67,22 @@ export const SUGGESTION_STATUS_TONES: Record<SuggestionStatus, BadgeTone> = {
   PLANNED: "amber",
   DONE: "green",
   DECLINED: "slate",
+};
+
+export const DEVELOPMENT_STATUS_LABELS: Record<DevelopmentStatus, string> = {
+  IDEA: "רעיון",
+  IN_PROGRESS: "בפיתוח",
+  TESTING: "בניסוי",
+  DONE: "הושלם",
+  ON_HOLD: "מוקפא",
+};
+
+export const DEVELOPMENT_STATUS_TONES: Record<DevelopmentStatus, BadgeTone> = {
+  IDEA: "slate",
+  IN_PROGRESS: "blue",
+  TESTING: "amber",
+  DONE: "green",
+  ON_HOLD: "slate",
 };
 
 export const FAULT_SEVERITY_LABELS: Record<FaultSeverity, string> = {

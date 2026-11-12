@@ -24,6 +24,8 @@ export const PERMISSIONS = {
   "suggestion.view": ["ADMIN", "INSTRUCTOR", "VIEWER"],
   "suggestion.create": ["ADMIN", "INSTRUCTOR", "VIEWER"],
   "suggestion.manage": ["ADMIN"],
+  "development.view": ["ADMIN", "INSTRUCTOR", "VIEWER"],
+  "development.manage": ["ADMIN"],
   "users.manage": ["ADMIN"],
   "settings.manage": ["ADMIN"],
   "audit.view": ["ADMIN"],

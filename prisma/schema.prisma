@@ -39,6 +39,7 @@ model User {
   bridgeTokens       BridgeToken[]
   invitations        Invitation[]
   suggestions        Suggestion[]
+  developments       Development[]
 
   @@map("user")
 }
@@ -130,6 +131,7 @@ model Organization {
   bridgeTokens            BridgeToken[]
   invitations             Invitation[]
   suggestions             Suggestion[]
+  developments            Development[]
   inventoryItemEquipments InventoryItemEquipment[]
   activities              Activity[]
 }
@@ -685,6 +687,35 @@ model Suggestion {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   author       User         @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, status])
+}
+
+// ───────────────────────── Development projects ─────────────────────────
+
+enum DevelopmentStatus {
+  IDEA
+  IN_PROGRESS
+  TESTING
+  DONE
+  ON_HOLD
+}
+
+// Truck-wide projects being developed (new stations, workshops, upgrades).
+model Development {
+  id             String            @id @default(cuid())
+  organizationId String
+  title          String
+  description    String?
+  status         DevelopmentStatus @default(IN_PROGRESS)
+  owner          String?
+  targetDate     DateTime?         @db.Date
+  createdById    String
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
   @@index([organizationId, status])
 }
