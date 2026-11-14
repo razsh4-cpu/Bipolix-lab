@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { ColorSwatch } from "@/components/color-swatch";
-import { QuickEntryFab } from "@/components/quick-entry-fab";
 import { startOfToday } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/forms";
@@ -342,7 +341,6 @@ async function DashboardContent() {
         <Materials groups={overview.materials} canEdit={can(role, "inventory.issue")} />
         <Summary stats={stats} />
       </div>
-      {can(role, "inventory.issue") && <QuickEntryFab />}
     </>
   );
 }
