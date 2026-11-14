@@ -14,7 +14,7 @@ function domainFailure(error: unknown): ActionState {
 }
 
 // Back to the calendar on the activity's day, so the admin sees what was saved.
-const dayView = (date: Date) => `/schedule?view=day&date=${date.toISOString().slice(0, 10)}`;
+const dayView = (date: Date) => `/schedule?view=day&focus=${date.toISOString().slice(0, 10)}`;
 
 async function actor() {
   const ctx = await requirePermission("activity.manage");
