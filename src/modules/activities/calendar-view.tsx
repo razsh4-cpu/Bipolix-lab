@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui";
-import type { ActivityStatus } from "@/generated/prisma/enums";
+import type { ActivityRecurrence, ActivityStatus } from "@/generated/prisma/enums";
 import { ACTIVITY_STATUS_LABELS, ACTIVITY_STATUS_TONES } from "@/lib/labels";
 import {
   WEEKDAY_SHORT,
@@ -21,6 +21,7 @@ export type CalendarActivity = {
   participants: number | null;
   status: ActivityStatus;
   notes: string | null;
+  recurrence?: ActivityRecurrence;
 };
 
 // The day view always starts today; a link to a day there only scrolls to it.
@@ -261,7 +262,7 @@ export function ActivityList({ rows, canEdit, showDate = true }: { rows: Calenda
   return (
     <ul className="divide-y divide-slate-100">
       {rows.map((a) => (
-        <li key={a.id} className="flex flex-wrap items-start justify-between gap-2 py-3">
+        <li key={`${a.id}-${toYmd(a.date)}`} className="flex flex-wrap items-start justify-between gap-2 py-3">
           <div className="min-w-0">
             <div className="text-sm text-slate-500">
               {showDate ? (
@@ -272,7 +273,10 @@ export function ActivityList({ rows, canEdit, showDate = true }: { rows: Calenda
               {showDate && a.startTime && " · "}
               {a.startTime && <span dir="ltr">{timeLabel(a)}</span>}
             </div>
-            <div className="font-medium">{a.title}</div>
+            <div className="font-medium">
+              {a.title}
+              {a.recurrence && a.recurrence !== "NONE" && <span className="ms-1 text-slate-500" title="פעילות חוזרת">↻</span>}
+            </div>
             <div className="text-sm text-slate-700">
               {a.location}
               {a.audience && ` · ${a.audience}`}

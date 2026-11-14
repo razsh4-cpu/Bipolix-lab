@@ -112,7 +112,7 @@ function Truck({ schedule, canEdit }: { schedule: Schedule; canEdit: boolean }) 
       ) : (
         <ul className="divide-y divide-slate-100">
           {schedule.next.map((a) => (
-            <li key={a.id} className="py-2">
+            <li key={`${a.id}-${a.date.toISOString()}`} className="py-2">
               <div className="text-sm text-slate-500">{formatDate(a.date)}{a.startTime && ` · ${timeRange(a)}`}</div>
               <div className="font-medium">{a.title}</div>
               <div className="text-sm text-slate-700">{a.location}</div>
