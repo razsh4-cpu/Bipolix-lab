@@ -81,7 +81,10 @@ export function DayAgenda({
                 {g.items.map((a) => {
                   const content = (
                     <>
-                      <span className="block truncate font-medium">{a.title}</span>
+                      <span className="block truncate font-medium">
+                        {a.recurrence && a.recurrence !== "NONE" && <span className="me-1" title="פעילות חוזרת">↻</span>}
+                        {a.title}
+                      </span>
                       <span className="block text-sm opacity-90">
                         {a.startTime ? <span dir="ltr">{a.startTime}{a.endTime && `–${a.endTime}`}</span> : "ללא שעה"}
                         {` · ${a.location}`}

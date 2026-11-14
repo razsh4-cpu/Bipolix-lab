@@ -1,5 +1,6 @@
 import type { BadgeTone } from "@/components/ui";
 import type {
+  ActivityRecurrence,
   ActivityStatus,
   ProcedureKind,
   EquipmentProcurement,
@@ -173,6 +174,11 @@ export const ACTIVITY_STATUS_LABELS: Record<ActivityStatus, string> = {
   PLANNED: "מתוכננת",
   DONE: "בוצעה",
   CANCELLED: "בוטלה",
+};
+export const ACTIVITY_RECURRENCE_LABELS: Record<ActivityRecurrence, string> = {
+  NONE: "לא חוזר",
+  DAILY: "חוזר כל יום",
+  WEEKLY: "חוזר כל שבוע",
 };
 export const ACTIVITY_STATUS_TONES: Record<ActivityStatus, BadgeTone> = {
   PLANNED: "blue",

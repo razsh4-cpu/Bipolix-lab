@@ -626,22 +626,32 @@ enum ActivityStatus {
   CANCELLED
 }
 
+// A repeating activity is stored once and expanded per day when shown.
+enum ActivityRecurrence {
+  NONE
+  DAILY
+  WEEKLY
+}
+
 // A truck activity: where the truck is on a given day and which workshop runs there.
 // Holds no personal data about participants, only a group description and a count.
 model Activity {
-  id             String         @id @default(cuid())
-  organizationId String
-  title          String
-  date           DateTime       @db.Date
-  startTime      String?
-  endTime        String?
-  location       String
-  audience       String?
-  participants   Int?
-  status         ActivityStatus @default(PLANNED)
-  notes          String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id              String             @id @default(cuid())
+  organizationId  String
+  title           String
+  date            DateTime           @db.Date
+  startTime       String?
+  endTime         String?
+  location        String
+  audience        String?
+  participants    Int?
+  status          ActivityStatus     @default(PLANNED)
+  notes           String?
+  recurrence      ActivityRecurrence @default(NONE)
+  // Last day a repeating activity occurs (inclusive); null = no end.
+  recurrenceUntil DateTime?          @db.Date
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
 
