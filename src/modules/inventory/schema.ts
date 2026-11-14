@@ -58,3 +58,33 @@ export function isFilamentCategory(category: string) {
 export function defaultUnitFor(category: string) {
   return isFilamentCategory(category) ? "גליל" : "יח'";
 }
+
+// The add form offers "גליל פילמנט" as a ready-made item name. A spool's material
+// type becomes part of its name (e.g. "גליל פילמנט PETG") so it shows everywhere
+// the item is listed, and the category is set behind the scenes.
+export const FILAMENT_ITEM_NAME = "גליל פילמנט";
+export const FILAMENT_CATEGORY = "גלילי פילמנט";
+export const GENERAL_CATEGORY = "כללי";
+export const FILAMENT_TYPES = ["PLA", "PETG", "TPU"] as const;
+
+const FilamentChoice = z.object({
+  materialType: z.enum(FILAMENT_TYPES, { error: "יש לבחור סוג גליל" }),
+});
+
+// Turns the add form's choices (item kind, spool type) into the stored fields.
+// Returns either the fields to validate as an item, or the spool-type error.
+export function resolveNewItemFields(raw: Record<string, unknown>):
+  | { ok: true; fields: Record<string, unknown> }
+  | { ok: false; error: z.ZodError } {
+  const { itemKind, materialType, ...rest } = raw;
+  if (itemKind === "filament") {
+    const choice = FilamentChoice.safeParse({ materialType });
+    if (!choice.success) return { ok: false, error: choice.error };
+    return {
+      ok: true,
+      fields: { ...rest, name: `${FILAMENT_ITEM_NAME} ${choice.data.materialType}`, category: FILAMENT_CATEGORY, unit: "גליל" },
+    };
+  }
+  const category = typeof rest.category === "string" && rest.category.trim() ? rest.category : GENERAL_CATEGORY;
+  return { ok: true, fields: { ...rest, category, unit: rest.unit ?? defaultUnitFor(category) } };
+}

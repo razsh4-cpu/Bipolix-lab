@@ -7,7 +7,7 @@ import { formToObject, validationError, type ActionState } from "@/lib/forms";
 import type { Permission } from "@/lib/permissions";
 import { requirePermission } from "@/lib/session";
 import { DomainError } from "@/modules/types";
-import { InventoryItemInput, NewInventoryItemInput, QuickMovementInput, StockMovementInput } from "./schema";
+import { InventoryItemInput, NewInventoryItemInput, QuickMovementInput, StockMovementInput, resolveNewItemFields } from "./schema";
 import { createInventoryItem, recordStockMovement, updateInventoryItem } from "./service";
 
 const MOVEMENT_PERMISSION: Record<StockMovementInput["type"], Permission> = {
@@ -33,7 +33,9 @@ function domainFailure(error: unknown): ActionState {
 
 export async function createInventoryItemAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const who = await actor("inventory.manage");
-  const parsed = NewInventoryItemInput.safeParse(itemFields(formData));
+  const resolved = resolveNewItemFields(itemFields(formData));
+  if (!resolved.ok) return validationError(resolved.error, formData);
+  const parsed = NewInventoryItemInput.safeParse(resolved.fields);
   if (!parsed.success) return validationError(parsed.error, formData);
   let id: string;
   try {
