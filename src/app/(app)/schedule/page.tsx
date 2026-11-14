@@ -6,12 +6,13 @@ import { can } from "@/lib/permissions";
 import { requirePermission } from "@/lib/session";
 import { addDays, daysBetween, parseDay, parseView, toYmd, viewTitle, visibleRange } from "@/modules/activities/calendar";
 import { ActivityList, MonthGrid, TimeGrid } from "@/modules/activities/calendar-view";
-import { DayScroller } from "@/modules/activities/day-scroller";
+import { DayAgenda } from "@/modules/activities/day-agenda";
 import { NewActivityButton, ScheduleToolbar } from "@/modules/activities/schedule-toolbar";
 import { listActivitiesBetween } from "@/modules/activities/service";
 
-// Days on each side of the chosen day in the swipeable day view.
-const DAY_STRIP = 14;
+// The day view lists activities from two weeks before the chosen day to two months after.
+const AGENDA_BEFORE = 14;
+const AGENDA_AFTER = 60;
 
 export const metadata = { title: "לו״ז המשאית — LabOps" };
 
@@ -28,8 +29,7 @@ async function Schedule({ searchParams }: { searchParams: PageProps<"/schedule">
   const today = startOfToday(now);
   const view = parseView(sp.view);
   const date = parseDay(sp.date, today);
-  // The day view is a swipeable strip of days around the chosen one.
-  const { from, to } = view === "day" ? { from: addDays(date, -DAY_STRIP), to: addDays(date, DAY_STRIP) } : visibleRange(view, date);
+  const { from, to } = view === "day" ? { from: addDays(date, -AGENDA_BEFORE), to: addDays(date, AGENDA_AFTER) } : visibleRange(view, date);
   const activities = await listActivitiesBetween(db, ctx.organization.id, from, to);
   const canEdit = can(ctx.role, "activity.manage");
   const todayKey = toYmd(today);
@@ -53,15 +53,7 @@ async function Schedule({ searchParams }: { searchParams: PageProps<"/schedule">
       ) : view === "week" ? (
         <TimeGrid days={days} today={todayKey} now={minutesNowInIsrael(now)} activities={activities} view="week" canEdit={canEdit} />
       ) : (
-        <DayScroller
-          key={toYmd(date)}
-          days={days}
-          initialDay={toYmd(date)}
-          today={todayKey}
-          now={minutesNowInIsrael(now)}
-          activities={activities}
-          canEdit={canEdit}
-        />
+        <DayAgenda key={toYmd(date)} days={days} initialDay={toYmd(date)} today={todayKey} activities={activities} canEdit={canEdit} />
       )}
     </>
   );
