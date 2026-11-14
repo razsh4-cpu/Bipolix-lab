@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { formToObject, validationError, type ActionState } from "@/lib/forms";
 import { requirePermission } from "@/lib/session";
 import { DomainError } from "@/modules/types";
-import { ActivityInput } from "./schema";
+import { ActivityFormInput } from "./schema";
 import { createActivity, updateActivity } from "./service";
 
 function domainFailure(error: unknown): ActionState {
@@ -23,7 +23,7 @@ async function actor() {
 
 export async function createActivityAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const who = await actor();
-  const parsed = ActivityInput.safeParse(formToObject(formData));
+  const parsed = ActivityFormInput.safeParse(formToObject(formData));
   if (!parsed.success) return validationError(parsed.error, formData);
   let activity;
   try {
@@ -36,7 +36,7 @@ export async function createActivityAction(_prev: ActionState, formData: FormDat
 
 export async function updateActivityAction(id: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const who = await actor();
-  const parsed = ActivityInput.safeParse(formToObject(formData));
+  const parsed = ActivityFormInput.safeParse(formToObject(formData));
   if (!parsed.success) return validationError(parsed.error, formData);
   let activity;
   try {

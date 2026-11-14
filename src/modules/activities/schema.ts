@@ -19,5 +19,13 @@ export const ActivityInput = z
   .refine((a) => !a.startTime || !a.endTime || a.startTime < a.endTime, {
     message: "שעת הסיום צריכה להיות אחרי שעת ההתחלה",
     path: ["endTime"],
+  })
+  // Guards against a mistyped year (e.g. 2017 instead of 2026) hiding the activity far from today.
+  .refine((a) => a.date.getUTCFullYear() >= 2024 && a.date.getUTCFullYear() <= 2100, {
+    message: "בדוק את השנה בתאריך",
+    path: ["date"],
   });
 export type ActivityInput = z.infer<typeof ActivityInput>;
+
+// The form asks for a start time so every activity shows on the calendar with its hour.
+export const ActivityFormInput = ActivityInput.refine((a) => !!a.startTime, { message: "שדה חובה", path: ["startTime"] });
