@@ -40,7 +40,7 @@ export function ActivityForm({
       <TextField name="title" label="שם הפעילות / הסדנה" state={state} required defaultValue={v(activity?.title)} />
       <div className="grid gap-4 sm:grid-cols-3">
         <TextField name="date" label="תאריך" type="date" state={state} required defaultValue={activity ? toDateInput(activity.date) : initial?.date} />
-        <TextField name="startTime" label="שעת התחלה" type="time" state={state} dir="ltr" defaultValue={activity ? v(activity.startTime) : initial?.startTime} />
+        <TextField name="startTime" label="שעת התחלה" type="time" state={state} required dir="ltr" defaultValue={activity ? v(activity.startTime) : initial?.startTime} />
         <TextField name="endTime" label="שעת סיום" type="time" state={state} dir="ltr" defaultValue={v(activity?.endTime)} />
       </div>
       <div>
