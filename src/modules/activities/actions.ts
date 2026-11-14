@@ -13,6 +13,9 @@ function domainFailure(error: unknown): ActionState {
   throw error;
 }
 
+// Back to the calendar on the activity's day, so the admin sees what was saved.
+const dayView = (date: Date) => `/schedule?view=day&date=${date.toISOString().slice(0, 10)}`;
+
 async function actor() {
   const ctx = await requirePermission("activity.manage");
   return { organizationId: ctx.organization.id, userId: ctx.user.id };
@@ -22,22 +25,24 @@ export async function createActivityAction(_prev: ActionState, formData: FormDat
   const who = await actor();
   const parsed = ActivityInput.safeParse(formToObject(formData));
   if (!parsed.success) return validationError(parsed.error, formData);
+  let activity;
   try {
-    await createActivity(db, who, parsed.data);
+    activity = await createActivity(db, who, parsed.data);
   } catch (error) {
     return domainFailure(error);
   }
-  redirect("/schedule");
+  redirect(dayView(activity.date));
 }
 
 export async function updateActivityAction(id: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const who = await actor();
   const parsed = ActivityInput.safeParse(formToObject(formData));
   if (!parsed.success) return validationError(parsed.error, formData);
+  let activity;
   try {
-    await updateActivity(db, who, id, parsed.data);
+    activity = await updateActivity(db, who, id, parsed.data);
   } catch (error) {
     return domainFailure(error);
   }
-  redirect("/schedule");
+  redirect(dayView(activity.date));
 }

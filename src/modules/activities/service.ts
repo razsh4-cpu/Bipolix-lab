@@ -82,3 +82,8 @@ export async function knownLocations(db: PrismaClient, organizationId: string) {
   });
   return rows.map((r) => r.location);
 }
+
+// Activities on the days a calendar view shows (inclusive).
+export function listActivitiesBetween(db: PrismaClient, organizationId: string, from: Date, to: Date) {
+  return db.activity.findMany({ where: { organizationId, date: { gte: from, lte: to } }, orderBy: ORDER });
+}

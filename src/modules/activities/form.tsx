@@ -24,11 +24,13 @@ export function ActivityForm({
   activity,
   locations,
   submitLabel,
+  initial,
 }: {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   activity?: Activity;
   locations: string[];
   submitLabel: string;
+  initial?: { date?: string; startTime?: string };
 }) {
   const [state, formAction, pending] = useActionState(action, initialActionState);
   const v = (x: string | null | undefined) => x ?? undefined;
@@ -37,8 +39,8 @@ export function ActivityForm({
       <FormMessage state={state} />
       <TextField name="title" label="שם הפעילות / הסדנה" state={state} required defaultValue={v(activity?.title)} />
       <div className="grid gap-4 sm:grid-cols-3">
-        <TextField name="date" label="תאריך" type="date" state={state} required defaultValue={toDateInput(activity?.date)} />
-        <TextField name="startTime" label="שעת התחלה" type="time" state={state} dir="ltr" defaultValue={v(activity?.startTime)} />
+        <TextField name="date" label="תאריך" type="date" state={state} required defaultValue={activity ? toDateInput(activity.date) : initial?.date} />
+        <TextField name="startTime" label="שעת התחלה" type="time" state={state} dir="ltr" defaultValue={activity ? v(activity.startTime) : initial?.startTime} />
         <TextField name="endTime" label="שעת סיום" type="time" state={state} dir="ltr" defaultValue={v(activity?.endTime)} />
       </div>
       <div>

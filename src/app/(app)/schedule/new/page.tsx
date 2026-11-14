@@ -8,22 +8,25 @@ import { knownLocations } from "@/modules/activities/service";
 
 export const metadata = { title: "פעילות חדשה — LabOps" };
 
-async function NewActivity() {
+async function NewActivity({ searchParams }: { searchParams: PageProps<"/schedule/new">["searchParams"] }) {
   const ctx = await requirePermission("activity.manage");
-  const locations = await knownLocations(db, ctx.organization.id);
+  const [sp, locations] = await Promise.all([searchParams, knownLocations(db, ctx.organization.id)]);
+  // Opened from a day in the calendar: start with that date (and hour).
+  const date = typeof sp.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : undefined;
+  const startTime = typeof sp.start === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(sp.start) ? sp.start : undefined;
   return (
     <Card>
-      <ActivityForm action={createActivityAction} locations={locations} submitLabel="שמירה" />
+      <ActivityForm action={createActivityAction} locations={locations} submitLabel="שמירה" initial={{ date, startTime }} />
     </Card>
   );
 }
 
-export default function NewActivityPage() {
+export default function NewActivityPage({ searchParams }: PageProps<"/schedule/new">) {
   return (
     <>
       <PageHeader title="פעילות חדשה" />
       <Suspense fallback={<ListSkeleton />}>
-        <NewActivity />
+        <NewActivity searchParams={searchParams} />
       </Suspense>
     </>
   );
