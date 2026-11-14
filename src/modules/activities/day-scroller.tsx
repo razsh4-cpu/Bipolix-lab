@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "@/components/ui";
 import type { ActivityStatus } from "@/generated/prisma/enums";
-import { WEEKDAY_SHORT, eventSpan, layoutDay, toYmd, viewTitle } from "./calendar";
+import { eventSpan, layoutDay, toYmd, viewTitle } from "./calendar";
 import { ActivityList, type CalendarActivity } from "./calendar-view";
 
-const HOUR_PX = 52;
+const HOUR_PX = 48;
+// Height of a sticky day header, so the day under it counts as the one in view.
+const HEADER_PX = 56;
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -22,8 +24,9 @@ const CHIP: Record<ActivityStatus, string> = {
   CANCELLED: "bg-slate-200 text-slate-500 line-through",
 };
 
-// Day view like Google Calendar on a phone: swipe sideways between days, scroll
-// up and down through all 24 hours, and open on the current hour (or the day's first activity).
+// Day view like Google Calendar on a phone: one continuous timeline where the days
+// follow each other top to bottom, each with all 24 hours and a header that sticks
+// while its day is on screen. Opens on the current hour (or the day's first activity).
 export function DayScroller({
   days,
   initialDay,
@@ -55,13 +58,12 @@ export function DayScroller({
   // Open on the chosen day, scrolled to the current hour / first activity.
   useEffect(() => {
     const box = scroller.current;
-    if (!box) return;
-    const col = box.querySelector<HTMLElement>(`[data-day="${initialDay}"]`);
+    const section = box?.querySelector<HTMLElement>(`[data-day="${initialDay}"]`);
+    if (!box || !section) return;
     const timed = (byDay.get(initialDay) ?? []).filter((a) => a.startTime);
     const minutes =
       initialDay === today ? now : timed.length ? Math.min(...timed.map((a) => eventSpan({ startTime: a.startTime!, endTime: a.endTime }).start)) : 8 * 60;
-    box.scrollTop = Math.max(0, (minutes / 60 - 1) * HOUR_PX);
-    col?.scrollIntoView({ block: "nearest", inline: "start" });
+    box.scrollTop = section.offsetTop + Math.max(0, (minutes / 60 - 1) * HOUR_PX);
     // Only on mount: later scrolling belongs to the user.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -70,16 +72,18 @@ export function DayScroller({
   useEffect(() => {
     const box = scroller.current;
     if (!box) return;
+    const sections = Array.from(box.querySelectorAll<HTMLElement>("[data-day]"));
     let frame = 0;
     let current = initialDay;
     const onScroll = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
-        const col = box.querySelector<HTMLElement>("[data-day]");
-        if (!col) return;
-        // Days run from the start edge, so |scrollLeft| works for RTL and LTR alike.
-        const index = Math.min(days.length - 1, Math.max(0, Math.round(Math.abs(box.scrollLeft) / col.offsetWidth)));
-        const day = toYmd(days[index]);
+        const top = box.scrollTop + HEADER_PX;
+        let day = sections[0]?.dataset.day ?? initialDay;
+        for (const s of sections) {
+          if (s.offsetTop > top) break;
+          day = s.dataset.day!;
+        }
         if (day === current) return;
         current = day;
         setVisible(day);
@@ -94,62 +98,61 @@ export function DayScroller({
       box.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(frame);
     };
-  }, [days, initialDay]);
+  }, [initialDay]);
 
   const visibleDate = new Date(`${visible}T00:00:00Z`);
   const visibleItems = byDay.get(visible) ?? [];
+  const first = days[0];
+  const last = days[days.length - 1];
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">{viewTitle("day", visibleDate)}</h2>
       <div
         ref={scroller}
-        className="@container relative h-[calc(100dvh-15rem)] min-h-[26rem] snap-x snap-mandatory scroll-ps-11 overflow-auto overscroll-x-contain rounded-2xl border border-slate-200 bg-white shadow-sm"
+        className="relative h-[calc(100dvh-13rem)] min-h-[26rem] overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white shadow-sm"
       >
-        <div className="flex w-max">
-          {/* Hour labels stay put while days slide past */}
-          <div className="sticky start-0 z-30 w-11 shrink-0 border-e border-slate-100 bg-white">
-            <div className="sticky top-0 z-30 h-14 bg-slate-50" />
-            <div className="relative" style={{ height: 24 * HOUR_PX }}>
-              {HOURS.slice(1).map((h) => (
-                <div key={h} className="absolute inset-x-0 -translate-y-1/2 pe-1 text-start text-[11px] text-slate-500" style={{ top: h * HOUR_PX }} dir="ltr">
-                  {pad(h)}:00
+        <Link href={`/schedule?view=day&date=${toYmd(new Date(first.getTime() - 86_400_000))}`} className="block py-3 text-center text-sm text-blue-700">
+          ↑ ימים קודמים
+        </Link>
+        {days.map((d) => {
+          const key = toYmd(d);
+          const items = byDay.get(key) ?? [];
+          const untimed = items.filter((a) => !a.startTime);
+          const timed = items.filter((a): a is CalendarActivity & { startTime: string } => !!a.startTime);
+          const isToday = key === today;
+          return (
+            <section key={key} data-day={key} className="relative">
+              <div className="sticky top-0 z-20 flex min-h-14 items-center gap-2 border-y border-slate-200 bg-slate-50/95 px-2 py-1.5 backdrop-blur">
+                <span
+                  className={`inline-flex size-9 shrink-0 items-center justify-center rounded-full text-base font-semibold ${isToday ? "bg-blue-700 text-white" : "text-slate-800"}`}
+                >
+                  {d.getUTCDate()}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className={`text-sm font-medium ${isToday ? "text-blue-800" : "text-slate-700"}`}>{viewTitle("day", d)}</div>
+                  {untimed.map((a) => (
+                    <EventLink key={a.id} a={a} canEdit={canEdit} className={`mt-0.5 block truncate rounded px-1.5 py-0.5 text-xs ${CHIP[a.status]}`}>
+                      {a.title} · {a.location}
+                    </EventLink>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {days.map((d) => {
-            const key = toYmd(d);
-            const items = byDay.get(key) ?? [];
-            const untimed = items.filter((a) => !a.startTime);
-            const timed = items.filter((a): a is CalendarActivity & { startTime: string } => !!a.startTime);
-            const isToday = key === today;
-            return (
-              <div key={key} data-day={key} className="w-[calc(100cqw-2.75rem)] shrink-0 snap-start border-e border-slate-100">
-                <div className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-slate-200 bg-slate-50 px-2">
-                  <span className="text-xs text-slate-600">{WEEKDAY_SHORT[d.getUTCDay()]}</span>
-                  <span
-                    className={`inline-flex size-8 items-center justify-center rounded-full text-base font-semibold ${isToday ? "bg-blue-700 text-white" : "text-slate-800"}`}
-                  >
-                    {d.getUTCDate()}
-                  </span>
-                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    {untimed.map((a) => (
-                      <EventLink key={a.id} a={a} canEdit={canEdit} className={`truncate rounded px-1.5 py-0.5 text-xs ${CHIP[a.status]}`}>
-                        {a.title} · {a.location}
-                      </EventLink>
-                    ))}
-                  </div>
+              </div>
+              <div className="flex">
+                <div className="relative w-11 shrink-0 border-e border-slate-100" style={{ height: 24 * HOUR_PX }}>
+                  {HOURS.slice(1).map((h) => (
+                    <div key={h} className="absolute inset-x-0 -translate-y-1/2 pe-1 text-start text-[11px] text-slate-500" style={{ top: h * HOUR_PX }} dir="ltr">
+                      {pad(h)}:00
+                    </div>
+                  ))}
                 </div>
-                <div className="relative" style={{ height: 24 * HOUR_PX }}>
+                <div className="relative min-w-0 flex-1" style={{ height: 24 * HOUR_PX }}>
                   {HOURS.map((h) =>
                     canEdit ? (
                       <Link
                         key={h}
                         href={`/schedule/new?date=${key}&start=${pad(h)}:00`}
                         aria-label={`פעילות חדשה ב-${pad(h)}:00`}
-                        className="absolute inset-x-0 border-t border-slate-100 active:bg-blue-50 hover:bg-blue-50/60"
+                        className="absolute inset-x-0 border-t border-slate-100 hover:bg-blue-50/60 active:bg-blue-50"
                         style={{ top: h * HOUR_PX, height: HOUR_PX }}
                       />
                     ) : (
@@ -181,13 +184,16 @@ export function DayScroller({
                   ))}
                 </div>
               </div>
-            );
-          })}
-        </div>
+            </section>
+          );
+        })}
+        <Link href={`/schedule?view=day&date=${toYmd(new Date(last.getTime() + 86_400_000))}`} className="block border-t border-slate-200 py-3 text-center text-sm text-blue-700">
+          ↓ ימים נוספים
+        </Link>
       </div>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="mb-3 text-lg font-semibold">פרטי הפעילויות</h2>
+        <h2 className="mb-3 text-lg font-semibold">פרטי הפעילויות · {viewTitle("day", visibleDate)}</h2>
         {visibleItems.length === 0 ? <EmptyState>אין פעילויות ביום הזה.</EmptyState> : <ActivityList rows={visibleItems} canEdit={canEdit} showDate={false} />}
       </section>
     </div>
