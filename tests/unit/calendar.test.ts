@@ -12,6 +12,8 @@ describe("calendar query values", () => {
     expect(parseDay("2026-02-30", fallback)).toBe(fallback);
     expect(parseDay("nope", fallback)).toBe(fallback);
     expect(toYmd(parseDay("2026-12-01", fallback))).toBe("2026-12-01");
+    // A date years away (a mistyped year) falls back to today.
+    expect(parseDay("2017-11-20", fallback)).toBe(fallback);
   });
 });
 
