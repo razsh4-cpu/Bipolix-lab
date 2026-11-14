@@ -20,7 +20,7 @@ function weekLabel(d: Date) {
 }
 
 // Day view like Google Calendar's schedule: a list grouped by day with only the
-// activities (title, time, place). Empty days are skipped, except today.
+// activities (title, time, place). Every day is listed (empty ones compact), each with a "+" to add one.
 export function DayAgenda({
   days,
   initialDay,
@@ -43,14 +43,12 @@ export function DayAgenda({
       map.set(key, [...(map.get(key) ?? []), a]);
     }
     return days
-      .map((d) => ({ date: d, key: toYmd(d), items: map.get(toYmd(d)) ?? [] }))
-      .filter((g) => g.items.length > 0 || g.key === today);
-  }, [activities, days, today]);
+      .map((d) => ({ date: d, key: toYmd(d), items: map.get(toYmd(d)) ?? [] }));
+  }, [activities, days]);
 
-  // Open on the chosen day, or the next day that has activities.
+  // Open on the chosen day.
   useEffect(() => {
-    const target = groups.find((g) => g.key >= initialDay);
-    const el = target && list.current?.querySelector<HTMLElement>(`[data-day="${target.key}"]`);
+    const el = list.current?.querySelector<HTMLElement>(`[data-day="${initialDay}"]`);
     el?.scrollIntoView({ block: "start" });
     // Only on mount: later scrolling belongs to the user.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -58,30 +56,24 @@ export function DayAgenda({
 
   return (
     <div ref={list} className="rounded-2xl border border-slate-200 bg-white px-2 py-2 shadow-sm sm:px-4">
-      {groups.length === 0 && <p className="py-8 text-center text-slate-600">אין פעילויות בתקופה הזו.</p>}
       {groups.map((g, i) => {
         const isToday = g.key === today;
         const newWeek = i === 0 || toYmd(startOfWeek(g.date)) !== toYmd(startOfWeek(groups[i - 1].date));
         return (
           <div key={g.key} data-day={g.key} className="scroll-mt-4">
             {newWeek && <div className="px-1 pb-1 pt-4 text-xs font-semibold tracking-wide text-slate-500">{weekLabel(g.date)}</div>}
-            <div className="flex gap-3 py-2">
-              <div className="w-12 shrink-0 pt-1 text-center">
+            <div className={`flex items-start gap-3 border-t border-slate-100 ${g.items.length ? "py-2" : "py-1"}`}>
+              <div className="w-12 shrink-0 text-center">
                 <div className={`text-xs ${isToday ? "font-semibold text-blue-700" : "text-slate-500"}`}>{WEEKDAY_SHORT[g.date.getUTCDay()]}</div>
                 <div
-                  className={`mx-auto mt-0.5 inline-flex size-9 items-center justify-center rounded-full text-lg ${
+                  className={`mx-auto inline-flex size-8 items-center justify-center rounded-full ${
                     isToday ? "bg-blue-700 font-semibold text-white" : "text-slate-800"
                   }`}
                 >
                   {g.date.getUTCDate()}
                 </div>
               </div>
-              <div className="min-w-0 flex-1 space-y-2">
-                {g.items.length === 0 && (
-                  <div className="rounded-lg border border-dashed border-slate-300 px-3 py-3 text-sm text-slate-500">
-                    אין פעילויות היום · {DAY_MONTH.format(g.date)}
-                  </div>
-                )}
+              <div className="min-w-0 flex-1 space-y-2 self-center">
                 {g.items.map((a) => {
                   const content = (
                     <>
@@ -100,6 +92,15 @@ export function DayAgenda({
                   );
                 })}
               </div>
+              {canEdit && (
+                <Link
+                  href={`/schedule/new?date=${g.key}`}
+                  aria-label={`פעילות חדשה ב-${DAY_MONTH.format(g.date)}`}
+                  className="mt-2 inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-slate-300 text-lg leading-none text-blue-700 hover:bg-blue-50 active:bg-blue-100"
+                >
+                  +
+                </Link>
+              )}
             </div>
           </div>
         );
