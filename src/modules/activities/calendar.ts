@@ -6,6 +6,7 @@ export const CALENDAR_VIEWS: CalendarView[] = ["month", "week", "day"];
 
 const DAY_MS = 86_400_000;
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_JUMP_DAYS = 2 * 366;
 
 export function parseView(value: unknown): CalendarView {
   return typeof value === "string" && (CALENDAR_VIEWS as string[]).includes(value) ? (value as CalendarView) : "month";
@@ -15,7 +16,9 @@ export function parseView(value: unknown): CalendarView {
 export function parseDay(value: unknown, fallback: Date): Date {
   if (typeof value !== "string" || !YMD.test(value)) return fallback;
   const d = new Date(`${value}T00:00:00Z`);
-  return Number.isNaN(d.getTime()) || toYmd(d) !== value ? fallback : d;
+  if (Number.isNaN(d.getTime()) || toYmd(d) !== value) return fallback;
+  // A date years away (e.g. a mistyped 2017 left in the address bar) opens on the fallback (today) instead.
+  return Math.abs(d.getTime() - fallback.getTime()) > MAX_JUMP_DAYS * DAY_MS ? fallback : d;
 }
 
 export function toYmd(date: Date) {
