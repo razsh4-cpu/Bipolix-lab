@@ -10,9 +10,9 @@ import { DayAgenda } from "@/modules/activities/day-agenda";
 import { NewActivityButton, ScheduleToolbar } from "@/modules/activities/schedule-toolbar";
 import { listActivitiesBetween } from "@/modules/activities/service";
 
-// The day view lists activities from two weeks before the chosen day to two months after.
-const AGENDA_BEFORE = 14;
-const AGENDA_AFTER = 60;
+// The day view is one continuous list: three months back to a year ahead of the chosen day.
+const AGENDA_BEFORE = 90;
+const AGENDA_AFTER = 365;
 
 export const metadata = { title: "לו״ז המשאית — LabOps" };
 
