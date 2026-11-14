@@ -10,9 +10,8 @@ import { DayAgenda } from "@/modules/activities/day-agenda";
 import { NewActivityButton, ScheduleToolbar } from "@/modules/activities/schedule-toolbar";
 import { listActivitiesBetween } from "@/modules/activities/service";
 
-// The day view is one continuous list: a month back to a year ahead of the chosen day.
-const AGENDA_BEFORE = 30;
-const AGENDA_AFTER = 365;
+// The day view is one continuous list from today to a year ahead.
+const AGENDA_DAYS = 365;
 
 export const metadata = { title: "לו״ז המשאית — LabOps" };
 
@@ -29,7 +28,16 @@ async function Schedule({ searchParams }: { searchParams: PageProps<"/schedule">
   const today = startOfToday(now);
   const view = parseView(sp.view);
   const date = parseDay(sp.date, today);
-  const { from, to } = view === "day" ? { from: addDays(date, -AGENDA_BEFORE), to: addDays(date, AGENDA_AFTER) } : visibleRange(view, date);
+  // Day view: always starts today, whatever date the address holds; ?focus= (a day
+  // tapped elsewhere, or the day just saved) only scrolls to that day, extending the list if needed.
+  const focus = view === "day" && typeof sp.focus === "string" ? parseDay(sp.focus, today) : null;
+  const { from, to } =
+    view === "day"
+      ? {
+          from: focus && focus < today ? focus : today,
+          to: addDays(focus && focus > addDays(today, AGENDA_DAYS) ? focus : today, AGENDA_DAYS),
+        }
+      : visibleRange(view, date);
   const activities = await listActivitiesBetween(db, ctx.organization.id, from, to);
   const canEdit = can(ctx.role, "activity.manage");
   const todayKey = toYmd(today);
@@ -39,7 +47,7 @@ async function Schedule({ searchParams }: { searchParams: PageProps<"/schedule">
 
   return (
     <>
-      <PageHeader title="לו״ז המשאית" actions={canEdit && <NewActivityButton view={view} date={toYmd(date)} />} />
+      <PageHeader title="לו״ז המשאית" actions={canEdit && <NewActivityButton />} />
       <ScheduleToolbar view={view} date={toYmd(date)} today={todayKey} />
       {view !== "day" && <h2 className="mb-3 text-lg font-semibold">{viewTitle(view, date)}</h2>}
 
@@ -53,7 +61,7 @@ async function Schedule({ searchParams }: { searchParams: PageProps<"/schedule">
       ) : view === "week" ? (
         <TimeGrid days={days} today={todayKey} now={minutesNowInIsrael(now)} activities={activities} view="week" canEdit={canEdit} />
       ) : (
-        <DayAgenda key={toYmd(date)} days={days} initialDay={toYmd(date)} today={todayKey} activities={activities} canEdit={canEdit} />
+        <DayAgenda key={focus ? toYmd(focus) : "today"} days={days} focusDay={focus ? toYmd(focus) : null} today={todayKey} activities={activities} canEdit={canEdit} />
       )}
     </>
   );

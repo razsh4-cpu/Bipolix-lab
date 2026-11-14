@@ -7,7 +7,15 @@ import { parseDay, shiftDate, toYmd, type CalendarView } from "./calendar";
 
 const VIEW_LABELS: Record<CalendarView, string> = { month: "חודש", week: "שבוע", day: "יום" };
 const NAV_BTN = "inline-flex h-9 min-w-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-2 text-sm text-slate-800 hover:bg-slate-50";
-const href = (view: CalendarView, date: Date) => `/schedule?view=${view}&date=${toYmd(date)}`;
+const href = (view: CalendarView, date: Date) => (view === "day" ? "/schedule?view=day" : `/schedule?view=${view}&date=${toYmd(date)}`);
+
+// In the day view "today" is already in the list: scroll to it instead of reloading.
+function scrollToToday(today: string, e: React.MouseEvent) {
+  const el = document.querySelector<HTMLElement>(`[data-day="${today}"]`);
+  if (!el) return;
+  e.preventDefault();
+  window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 8, behavior: "smooth" });
+}
 
 // The day view updates ?date= while the user swipes between days, so links read the
 // current URL rather than the date the page was rendered with.
@@ -34,18 +42,27 @@ export function ScheduleToolbar({ view, date, today }: { view: CalendarView; dat
         ))}
       </div>
       <div className="flex items-center gap-1.5">
-        <Link href={href(view, new Date(`${today}T00:00:00Z`))} className={NAV_BTN}>היום</Link>
-        <Link href={href(view, shiftDate(view, current, -1))} className={NAV_BTN} aria-label="הקודם">›</Link>
-        <Link href={href(view, shiftDate(view, current, 1))} className={NAV_BTN} aria-label="הבא">‹</Link>
+        <Link
+          href={href(view, new Date(`${today}T00:00:00Z`))}
+          onClick={view === "day" ? (e) => scrollToToday(today, e) : undefined}
+          className={NAV_BTN}
+        >
+          היום
+        </Link>
+        {view !== "day" && (
+          <>
+            <Link href={href(view, shiftDate(view, current, -1))} className={NAV_BTN} aria-label="הקודם">›</Link>
+            <Link href={href(view, shiftDate(view, current, 1))} className={NAV_BTN} aria-label="הבא">‹</Link>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-export function NewActivityButton({ view, date }: { view: CalendarView; date: string }) {
-  const current = useCurrentDate(date);
+export function NewActivityButton() {
   return (
-    <Link href={view === "day" ? `/schedule/new?date=${toYmd(current)}` : "/schedule/new"} className={BUTTON_PRIMARY}>
+    <Link href="/schedule/new" className={BUTTON_PRIMARY}>
       פעילות חדשה
     </Link>
   );

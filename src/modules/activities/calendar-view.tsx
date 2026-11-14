@@ -23,7 +23,9 @@ export type CalendarActivity = {
   notes: string | null;
 };
 
-export const scheduleHref = (view: CalendarView, date: Date) => `/schedule?view=${view}&date=${toYmd(date)}`;
+// The day view always starts today; a link to a day there only scrolls to it.
+export const scheduleHref = (view: CalendarView, date: Date) =>
+  view === "day" ? `/schedule?view=day&focus=${toYmd(date)}` : `/schedule?view=${view}&date=${toYmd(date)}`;
 
 const CHIP: Record<ActivityStatus, string> = {
   PLANNED: "bg-blue-600 text-white",

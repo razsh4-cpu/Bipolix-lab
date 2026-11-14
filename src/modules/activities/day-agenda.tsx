@@ -23,13 +23,15 @@ function weekLabel(d: Date) {
 // activities (title, time, place). Every day is listed (empty ones compact), each with a "+" to add one.
 export function DayAgenda({
   days,
-  initialDay,
+  focusDay,
   today,
   activities,
   canEdit,
 }: {
   days: Date[];
-  initialDay: string;
+  // A day to scroll to (tapped in another view, or just saved). Without one the list
+  // starts today, so today is already at the top.
+  focusDay: string | null;
   today: string;
   activities: CalendarActivity[];
   canEdit: boolean;
@@ -46,13 +48,15 @@ export function DayAgenda({
       .map((d) => ({ date: d, key: toYmd(d), items: map.get(toYmd(d)) ?? [] }));
   }, [activities, days]);
 
-  // Open on the chosen day.
+  // Scroll to the focused day once the list is laid out.
   useEffect(() => {
-    const el = list.current?.querySelector<HTMLElement>(`[data-day="${initialDay}"]`);
-    el?.scrollIntoView({ block: "start" });
-    // Only on mount: later scrolling belongs to the user.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!focusDay) return;
+    const frame = requestAnimationFrame(() => {
+      const el = list.current?.querySelector<HTMLElement>(`[data-day="${focusDay}"]`);
+      if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 8 });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusDay]);
 
   return (
     <div ref={list} className="rounded-2xl border border-slate-200 bg-white px-2 py-2 shadow-sm sm:px-4">
