@@ -63,6 +63,15 @@ export const MORE_MATERIAL_COLORS: { hex: string; name: string }[] = [
   { hex: "#ff5f1f", name: "כתום זוהר" },
 ];
 
+// The swatches shown in the colour field: about 20 common filament colours,
+// three rows of seven on a phone. Ordered by hue. Any other colour is picked
+// with "צבע אחר"; colours stored earlier still keep their names above.
+export const FILAMENT_PALETTE: string[] = [
+  "#000000", "#545454", "#8e9089", "#a6a9aa", "#ffffff", "#e8dbb7", "#7d6556",
+  "#8e1b2f", "#c12e1f", "#ff6a13", "#e4bd68", "#f4ee2a", "#c2e189", "#00ae42",
+  "#164b35", "#00bfa5", "#56b7e6", "#0a2989", "#5e43b7", "#f55a74", "#ec008c",
+];
+
 export const COLOR_PATTERN = /^#[0-9a-f]{6}$/;
 
 export function colorName(hex: string | null | undefined) {

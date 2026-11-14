@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { COLOR_PATTERN, MATERIAL_COLOR_PRESETS, MORE_MATERIAL_COLORS, colorName } from "@/lib/colors";
+import { COLOR_PATTERN, FILAMENT_PALETTE, colorName } from "@/lib/colors";
 import type { ActionState } from "@/lib/forms";
 
-const PALETTE = [...MATERIAL_COLOR_PRESETS, ...MORE_MATERIAL_COLORS];
+const PALETTE = FILAMENT_PALETTE.map((hex) => ({ hex, name: colorName(hex) ?? hex }));
 const SWATCH =
   "aspect-square w-full max-w-11 rounded-full ring-1 ring-inset ring-slate-400/70 outline-offset-2 aria-pressed:outline-3 aria-pressed:outline-blue-600";
 const CHIP = "h-9 rounded-full border border-slate-300 bg-white px-3 text-sm";
 
-// The whole palette is shown at once, so most spools are one tap away.
+// A short palette of common filament colours; anything else via "צבע אחר".
 // "hidden" keeps the choice while the field is out of view and leaves it out of the submit.
 export function ColorField({ state, defaultValue, hidden = false }: { state: ActionState; defaultValue?: string | null; hidden?: boolean }) {
   const submitted = state.values?.color;
@@ -21,7 +21,7 @@ export function ColorField({ state, defaultValue, hidden = false }: { state: Act
     <fieldset className="sm:col-span-2" hidden={hidden} disabled={hidden}>
       <legend className="text-sm font-medium">צבע</legend>
       <input type="hidden" name="color" value={color} />
-      <div className="mt-2 grid grid-cols-7 justify-items-center gap-2 sm:grid-cols-14">
+      <div className="mt-2 grid grid-cols-7 justify-items-center gap-2 sm:grid-cols-11">
         {PALETTE.map((c) => (
           <button
             key={c.hex}

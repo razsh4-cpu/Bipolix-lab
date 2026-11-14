@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { FILAMENT_PALETTE, colorName } from "@/lib/colors";
 import { defaultUnitFor, isFilamentCategory, resolveNewItemFields } from "@/modules/inventory/schema";
 
 describe("isFilamentCategory", () => {
@@ -39,5 +40,13 @@ describe("resolveNewItemFields", () => {
       ok: true,
       fields: { name: "להבים", category: "כללי", unit: "יח'" },
     });
+  });
+});
+
+describe("FILAMENT_PALETTE", () => {
+  it("shows a short list of distinct, named colours", () => {
+    expect(FILAMENT_PALETTE.length).toBeLessThanOrEqual(21);
+    expect(new Set(FILAMENT_PALETTE).size).toBe(FILAMENT_PALETTE.length);
+    for (const hex of FILAMENT_PALETTE) expect(colorName(hex)).not.toBe(hex);
   });
 });
