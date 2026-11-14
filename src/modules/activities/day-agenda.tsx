@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef } from "react";
 import type { ActivityStatus } from "@/generated/prisma/enums";
-import { WEEKDAY_SHORT, addDays, startOfWeek, toYmd, viewTitle } from "./calendar";
+import { WEEKDAY_SHORT, startOfWeek, toYmd, viewTitle } from "./calendar";
 import type { CalendarActivity } from "./calendar-view";
 
 const CARD: Record<ActivityStatus, string> = {
@@ -56,14 +56,8 @@ export function DayAgenda({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const first = days[0];
-  const last = days[days.length - 1];
-
   return (
-    <div ref={list} className="rounded-2xl border border-slate-200 bg-white px-2 pb-2 shadow-sm sm:px-4">
-      <Link href={`/schedule?view=day&date=${toYmd(addDays(first, -1))}`} className="block py-3 text-center text-sm text-blue-700">
-        ↑ פעילויות קודמות
-      </Link>
+    <div ref={list} className="rounded-2xl border border-slate-200 bg-white px-2 py-2 shadow-sm sm:px-4">
       {groups.length === 0 && <p className="py-8 text-center text-slate-600">אין פעילויות בתקופה הזו.</p>}
       {groups.map((g, i) => {
         const isToday = g.key === today;
@@ -110,9 +104,6 @@ export function DayAgenda({
           </div>
         );
       })}
-      <Link href={`/schedule?view=day&date=${toYmd(addDays(last, 1))}`} className="block border-t border-slate-100 py-3 text-center text-sm text-blue-700">
-        ↓ פעילויות נוספות
-      </Link>
     </div>
   );
 }
