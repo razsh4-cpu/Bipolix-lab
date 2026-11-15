@@ -12,6 +12,7 @@ import type {
   MemberRole,
   PlanSource,
   DevelopmentStatus,
+  PrintRequestStatus,
   SuggestionStatus,
   TaskPriority,
   TaskStatus,
@@ -84,6 +85,20 @@ export const DEVELOPMENT_STATUS_TONES: Record<DevelopmentStatus, BadgeTone> = {
   TESTING: "amber",
   DONE: "green",
   ON_HOLD: "slate",
+};
+
+export const PRINT_REQUEST_STATUS_LABELS: Record<PrintRequestStatus, string> = {
+  PENDING: "ממתין להדפסה",
+  PRINTING: "בהדפסה",
+  PRINTED: "הודפס",
+  DELIVERED: "נמסר",
+};
+
+export const PRINT_REQUEST_STATUS_TONES: Record<PrintRequestStatus, BadgeTone> = {
+  PENDING: "amber",
+  PRINTING: "blue",
+  PRINTED: "green",
+  DELIVERED: "slate",
 };
 
 export const FAULT_SEVERITY_LABELS: Record<FaultSeverity, string> = {
