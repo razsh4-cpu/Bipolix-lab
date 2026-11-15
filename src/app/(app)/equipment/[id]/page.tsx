@@ -43,6 +43,35 @@ async function EquipmentDetail({ params }: { params: PageProps<"/equipment/[id]"
   const lastMaintenance = e.maintenance[0]?.performedAt;
   const nextPlan = e.plans[0];
 
+  // "נדרש לרכישה": show only what matters for buying — category, model, notes.
+  if (e.procurement === "TO_ORDER") {
+    return (
+      <>
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <Link href="/equipment" className="text-sm text-blue-700 underline">חזרה לרשימת הציוד</Link>
+            <h1 className="mt-1 text-2xl font-bold">{e.name}</h1>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Badge tone={EQUIPMENT_PROCUREMENT_TONES[e.procurement]}>{EQUIPMENT_PROCUREMENT_LABELS[e.procurement]}</Badge>
+            </div>
+          </div>
+          {can(ctx.role, "equipment.manage") && (
+            <LinkButton href={`/equipment/${e.id}/edit`} variant="secondary">עריכה</LinkButton>
+          )}
+        </div>
+        <Card title="פרטים לרכישה">
+          <DetailList
+            items={[
+              { label: "קטגוריה", value: e.category },
+              { label: "דגם", value: e.model },
+              { label: "הערות", value: e.notes },
+            ]}
+          />
+        </Card>
+      </>
+    );
+  }
+
   return (
     <>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">

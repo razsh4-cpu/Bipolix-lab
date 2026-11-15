@@ -76,7 +76,10 @@ async function EquipmentList({ searchParams }: { searchParams: PageProps<"/equip
                         <div className="min-w-0">
                           <div className="font-medium">{e.name}</div>
                           <div className="text-sm text-slate-500">
-                            {[e.category, e.manufacturer, e.model, e.location].filter(Boolean).join(" · ")}
+                            {(stage === "TO_ORDER"
+                              ? [e.category, e.model !== e.name && e.model]
+                              : [e.category, e.manufacturer, e.model, e.location]
+                            ).filter(Boolean).join(" · ")}
                           </div>
                         </div>
                         {stage === "IN_SERVICE" && (

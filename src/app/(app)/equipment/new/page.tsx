@@ -25,7 +25,7 @@ export default function NewEquipmentPage() {
   return (
     <>
       <PageHeader title="הוספת ציוד" />
-      <p className="mb-4 text-sm text-slate-600">רק שם וקטגוריה הם שדות חובה. שדות שלא ידועים כרגע אפשר להשאיר ריקים.</p>
+      <p className="mb-4 text-sm text-slate-600">שדות עם * הם חובה. שדות שלא ידועים כרגע אפשר להשאיר ריקים.</p>
       <Suspense fallback={<ListSkeleton />}>
         <NewEquipment />
       </Suspense>
