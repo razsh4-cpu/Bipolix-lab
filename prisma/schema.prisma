@@ -40,6 +40,7 @@ model User {
   invitations        Invitation[]
   suggestions        Suggestion[]
   developments       Development[]
+  printRequests      PrintRequest[]
   loadedMaterials    LoadedMaterial[]
 
   @@map("user")
@@ -133,6 +134,8 @@ model Organization {
   invitations             Invitation[]
   suggestions             Suggestion[]
   developments            Development[]
+  schools                 School[]
+  printRequests           PrintRequest[]
   inventoryItemEquipments InventoryItemEquipment[]
   activities              Activity[]
   loadedMaterials         LoadedMaterial[]
@@ -757,4 +760,45 @@ model Development {
   createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
   @@index([organizationId, status])
+}
+
+// Schools the truck prints 3D parts for (entered by the admin).
+model School {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  printRequests PrintRequest[]
+
+  @@unique([organizationId, name])
+}
+
+enum PrintRequestStatus {
+  PENDING
+  PRINTING
+  PRINTED
+  DELIVERED
+}
+
+// One thing a school needs printed, with an optional link to its 3D files.
+model PrintRequest {
+  id             String             @id @default(cuid())
+  organizationId String
+  schoolId       String
+  description    String
+  quantity       Int?
+  filesUrl       String?
+  status         PrintRequestStatus @default(PENDING)
+  createdById    String
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  school       School       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, schoolId, status])
 }
