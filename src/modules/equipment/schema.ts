@@ -2,7 +2,7 @@ import { z } from "zod";
 import { EquipmentProcurement, EquipmentStatus } from "@/generated/prisma/enums";
 import { optionalDate, optionalText, requiredText } from "@/lib/forms";
 
-export const EquipmentInput = z.object({
+const EquipmentFields = z.object({
   name: requiredText(120),
   category: requiredText(80),
   labId: z.string().optional(),
@@ -16,6 +16,16 @@ export const EquipmentInput = z.object({
   notes: optionalText(2000),
   safetyInstructions: optionalText(4000),
 });
+
+// The "נדרש לרכישה" form only asks for category, model and notes, so the
+// item's name is taken from the model (or the category when there is none).
+export const EquipmentInput = z.preprocess((raw) => {
+  if (!raw || typeof raw !== "object") return raw;
+  const r = raw as Record<string, unknown>;
+  if (r.procurement !== "TO_ORDER") return r;
+  const name = (typeof r.model === "string" && r.model) || (typeof r.category === "string" && r.category) || r.name;
+  return { ...r, name };
+}, EquipmentFields);
 export type EquipmentInput = z.infer<typeof EquipmentInput>;
 
 export const EquipmentStatusChange = z.object({
