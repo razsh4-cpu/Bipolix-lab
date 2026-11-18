@@ -4,12 +4,14 @@ import { ColorSwatch } from "@/components/color-swatch";
 import { startOfToday } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { formatDate, formatDateTime } from "@/lib/forms";
-import { EQUIPMENT_STATUS_LABELS, FAULT_SEVERITY_LABELS, FAULT_STATUS_LABELS } from "@/lib/labels";
+import { Badge } from "@/components/ui";
+import { EQUIPMENT_STATUS_LABELS, FAULT_SEVERITY_LABELS, FAULT_STATUS_LABELS, TASK_PRIORITY_LABELS, TASK_PRIORITY_TONES, TASK_STATUS_LABELS } from "@/lib/labels";
 import { can } from "@/lib/permissions";
 import { getOrgContext } from "@/lib/session";
 import type { Condition, MachineBoardRow } from "@/modules/dashboard/machine-board";
 import { getOverview, type AlertLevel, type DashboardAlert, type MaterialRow } from "@/modules/dashboard/overview";
 import { getDashboardStats } from "@/modules/dashboard/stats";
+import { listImportantTasks } from "@/modules/tasks/service";
 
 export const metadata = { title: "דשבורד — LabOps" };
 
@@ -296,6 +298,46 @@ function Materials({ groups, canEdit }: { groups: Map<string, MaterialRow[]>; ca
   );
 }
 
+const SHOWN_TASKS = 6;
+
+function ImportantTasks({ tasks, canEdit }: { tasks: Awaited<ReturnType<typeof listImportantTasks>>; canEdit: boolean }) {
+  return (
+    <Panel
+      title={`משימות חשובות${tasks.length ? ` (${tasks.length})` : ""}`}
+      href="/tasks"
+      aside={canEdit && <Link href="/tasks/new" className="text-sm text-blue-700 underline">+ משימה</Link>}
+    >
+      {tasks.length === 0 ? (
+        <p className="text-sm text-slate-500">אין משימות דחופות או באיחור.</p>
+      ) : (
+        <ul className="divide-y divide-slate-100">
+          {tasks.slice(0, SHOWN_TASKS).map((t) => (
+            <li key={t.id} className="py-2">
+              <Link href={`/tasks/${t.id}`} className="flex items-start justify-between gap-2 hover:text-blue-800">
+                <span className="min-w-0">
+                  <span className="block font-medium">{t.title}</span>
+                  <span className="block text-xs text-slate-500">
+                    {[t.assignee?.name, TASK_STATUS_LABELS[t.status], t.dueDate && `יעד: ${formatDate(t.dueDate)}`].filter(Boolean).join(" · ")}
+                  </span>
+                </span>
+                <span className="flex shrink-0 flex-col items-end gap-1">
+                  {t.isOverdue && <Badge tone="red">באיחור</Badge>}
+                  {(t.priority === "HIGH" || t.priority === "URGENT") && (
+                    <Badge tone={TASK_PRIORITY_TONES[t.priority]}>{TASK_PRIORITY_LABELS[t.priority]}</Badge>
+                  )}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      {tasks.length > SHOWN_TASKS && (
+        <Link href="/tasks?status=OPEN" className="mt-2 inline-block text-sm text-blue-700 underline">עוד {tasks.length - SHOWN_TASKS} משימות</Link>
+      )}
+    </Panel>
+  );
+}
+
 function Summary({ stats }: { stats: Awaited<ReturnType<typeof getDashboardStats>> }) {
   const rows: [string, number, string][] = [
     ["תקלות פתוחות", stats.maintenance.openFaults, "/maintenance"],
@@ -329,14 +371,21 @@ async function DashboardContent() {
   }
 
   const now = new Date();
-  const [overview, stats] = await Promise.all([getOverview(db, organization.id, now), getDashboardStats(db, organization.id, now)]);
+  const [overview, stats, importantTasks] = await Promise.all([
+    getOverview(db, organization.id, now),
+    getDashboardStats(db, organization.id, now),
+    listImportantTasks(db, organization.id, now),
+  ]);
 
   return (
     <>
       <p className="-mt-4 mb-4 text-sm text-slate-500">נכון ל-{formatDateTime(now)}</p>
       <div className="grid gap-4 lg:grid-cols-3">
         <Alerts alerts={overview.alerts} />
-        <Truck schedule={overview.schedule} canEdit={can(role, "activity.manage")} />
+        <div className="flex flex-col gap-4">
+          <Truck schedule={overview.schedule} canEdit={can(role, "activity.manage")} />
+          <ImportantTasks tasks={importantTasks} canEdit={can(role, "task.manage")} />
+        </div>
         <MachineBoard machines={overview.machines} />
         <Materials groups={overview.materials} canEdit={can(role, "inventory.issue")} />
         <Summary stats={stats} />

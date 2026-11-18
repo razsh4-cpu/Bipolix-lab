@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { href: "/tasks", label: "משימות", ready: true },
   { href: "/procedures", label: "נהלים", ready: true },
   { href: "/schools", label: "בתי ספר", ready: true },
+  { href: "/documents", label: "מסמכים", ready: true },
   { href: "/developments", label: "פיתוחים בתהליך", ready: true },
   { href: "/suggestions", label: "הצעות לשיפור", ready: true },
 ] as const;

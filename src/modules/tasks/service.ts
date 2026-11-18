@@ -130,3 +130,22 @@ export function updateTaskStatus(db: PrismaClient, actor: Actor & { role: Member
     return task;
   });
 }
+
+// Tasks everyone should see on the dashboard: open and either high/urgent priority or past due.
+export async function listImportantTasks(db: PrismaClient, organizationId: string, now = new Date()) {
+  const today = startOfToday(now);
+  const tasks = await db.task.findMany({
+    where: {
+      organizationId,
+      status: { not: "COMPLETED" },
+      OR: [{ priority: { in: ["HIGH", "URGENT"] } }, { dueDate: { lt: today } }],
+    },
+    orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }],
+    take: 50,
+    select: { id: true, title: true, priority: true, status: true, dueDate: true, assignee: { select: { name: true } } },
+  });
+  const rank = { URGENT: 0, HIGH: 1, MEDIUM: 2, LOW: 3 } as const;
+  return tasks
+    .map((t) => ({ ...t, isOverdue: t.dueDate !== null && t.dueDate < today }))
+    .sort((a, b) => Number(b.isOverdue) - Number(a.isOverdue) || rank[a.priority] - rank[b.priority]);
+}
