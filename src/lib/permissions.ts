@@ -28,6 +28,8 @@ export const PERMISSIONS = {
   "development.manage": ["ADMIN"],
   "school.view": ["ADMIN", "INSTRUCTOR", "VIEWER"],
   "school.manage": ["ADMIN"],
+  "document.view": ["ADMIN", "INSTRUCTOR", "VIEWER"],
+  "document.manage": ["ADMIN"],
   "users.manage": ["ADMIN"],
   "settings.manage": ["ADMIN"],
   "audit.view": ["ADMIN"],

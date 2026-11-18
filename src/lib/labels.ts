@@ -7,6 +7,7 @@ import type {
   EquipmentStatus,
   FaultSeverity,
   FaultStatus,
+  LabDocumentCategory,
   InventoryTransactionType,
   MaintenanceType,
   MemberRole,
@@ -199,4 +200,10 @@ export const ACTIVITY_STATUS_TONES: Record<ActivityStatus, BadgeTone> = {
   PLANNED: "blue",
   DONE: "green",
   CANCELLED: "slate",
+};
+
+export const LAB_DOCUMENT_CATEGORY_LABELS: Record<LabDocumentCategory, string> = {
+  AUTHORITIES: "משרדים ורשויות",
+  EQUIPMENT: "ציוד",
+  GENERAL: "כללי",
 };
