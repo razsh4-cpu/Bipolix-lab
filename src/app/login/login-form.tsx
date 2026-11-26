@@ -8,6 +8,8 @@ export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const invited = params.get("invited") === "1";
+  const reset = params.get("reset") === "1";
+  const [showForgot, setShowForgot] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -38,6 +40,11 @@ export function LoginForm() {
       {invited && (
         <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
           החשבון נוצר. אפשר להתחבר עם הסיסמה שבחרת.
+        </p>
+      )}
+      {reset && (
+        <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          הסיסמה עודכנה. אפשר להתחבר עם הסיסמה החדשה.
         </p>
       )}
       <div>
@@ -81,6 +88,21 @@ export function LoginForm() {
       >
         {pending ? "מתחבר…" : "התחברות"}
       </button>
+      <div className="text-center">
+        <button
+          type="button"
+          onClick={() => setShowForgot((v) => !v)}
+          aria-expanded={showForgot}
+          className="text-sm text-blue-700 underline"
+        >
+          שכחתי סיסמה
+        </button>
+        {showForgot && (
+          <p role="status" className="mt-2 rounded-lg bg-slate-100 px-3 py-2 text-right text-sm text-slate-700">
+            פנו למנהל המערכת ובקשו קישור לאיפוס סיסמה. הקישור יגיע בוואטסאפ או במייל, ודרכו בוחרים סיסמה חדשה.
+          </p>
+        )}
+      </div>
     </form>
   );
 }

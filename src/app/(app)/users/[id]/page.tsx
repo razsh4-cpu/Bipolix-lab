@@ -7,6 +7,8 @@ import { requirePermission } from "@/lib/session";
 import { resetPasswordAction, updateMemberAction } from "@/modules/users/actions";
 import { MemberForm, PasswordResetForm } from "@/modules/users/forms";
 import { getMember } from "@/modules/users/service";
+import { createResetLinkAction } from "@/modules/password-reset/actions";
+import { ResetLinkForm } from "@/modules/password-reset/forms";
 
 async function Member({ params, searchParams }: PageProps<"/users/[id]">) {
   const ctx = await requirePermission("users.manage");
@@ -28,7 +30,10 @@ async function Member({ params, searchParams }: PageProps<"/users/[id]">) {
         <Card title="תפקיד וגישה">
           <MemberForm action={updateMemberAction.bind(null, id)} role={m.role} isActive={m.user.isActive} isSelf={id === ctx.user.id} />
         </Card>
-        <Card title="החלפת סיסמה">
+        <Card title="קישור לאיפוס סיסמה">
+          <ResetLinkForm action={createResetLinkAction.bind(null, id)} />
+        </Card>
+        <Card title="החלפת סיסמה ידנית">
           <PasswordResetForm action={resetPasswordAction.bind(null, id)} />
         </Card>
       </div>

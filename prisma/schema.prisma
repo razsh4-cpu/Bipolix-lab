@@ -38,6 +38,8 @@ model User {
   auditLogs          AuditLog[]
   bridgeTokens       BridgeToken[]
   invitations        Invitation[]
+  passwordResetLinks PasswordResetLink[] @relation("PasswordResetFor")
+  createdResetLinks  PasswordResetLink[] @relation("PasswordResetCreatedBy")
   suggestions        Suggestion[]
   developments       Development[]
   printRequests      PrintRequest[]
@@ -132,6 +134,7 @@ model Organization {
   printerLinks            PrinterLink[]
   bridgeTokens            BridgeToken[]
   invitations             Invitation[]
+  passwordResetLinks      PasswordResetLink[]
   suggestions             Suggestion[]
   developments            Development[]
   schools                 School[]
@@ -681,6 +684,26 @@ model Invitation {
   createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Restrict)
 
   @@index([organizationId, email])
+}
+
+// One-time link an admin creates for a member who forgot their password.
+// Only the token's hash is stored.
+model PasswordResetLink {
+  id             String    @id @default(cuid())
+  organizationId String
+  userId         String
+  tokenHash      String    @unique
+  expiresAt      DateTime
+  usedAt         DateTime?
+  revokedAt      DateTime?
+  createdById    String
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  user         User         @relation("PasswordResetFor", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy    User         @relation("PasswordResetCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([userId])
 }
 
 // Material currently loaded in a machine (spool in an AMS slot, vinyl roll in

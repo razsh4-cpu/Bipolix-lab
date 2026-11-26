@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { db } from "@/lib/db";
 import { ROLE_LABELS } from "@/lib/labels";
@@ -10,6 +11,8 @@ export const metadata = { title: "הצטרפות — LabOps", robots: { index: f
 
 async function Invite({ params }: { params: PageProps<"/invite/[token]">["params"] }) {
   const { token } = await params;
+  // Link validity depends on the current time, so render per request.
+  await connection();
   const invitation = await findUsableInvitation(db, token);
   if (!invitation) {
     return (
